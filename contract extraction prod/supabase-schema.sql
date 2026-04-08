@@ -22,7 +22,7 @@ create table if not exists public.contract_extractions (
 comment on table public.contract_extractions is 'One row per contract file; columns match CSV export.';
 
 -- Storage: create a bucket in Dashboard > Storage (name must match SUPABASE_STORAGE_BUCKET, e.g. "contracts").
--- Files are uploaded under the prefix set in SUPABASE_STORAGE_FOLDER (e.g. "Untitled folder/") inside that bucket.
+-- Files are uploaded under the prefix set in SUPABASE_STORAGE_FOLDER (e.g. "To Fill 1/") inside that bucket.
 
 -- Optional: allow anon uploads to that bucket (replace "contracts" with your bucket id).
 -- drop policy if exists "storage_insert_contracts_anon" on storage.objects;
