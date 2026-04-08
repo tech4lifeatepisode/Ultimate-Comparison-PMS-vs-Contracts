@@ -4,6 +4,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { syncExtractionsToSupabase } from './supabase-output.mjs';
+import {
+  CONTRACT_FILE_EXTENSIONS,
+  DOCX_MIME_TYPE,
+  mimeFromContractFileName,
+} from './contract-file-types.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +17,7 @@ const DEFAULT_MODEL = process.env.OPENAI_MODEL_DEFAULT || 'gpt-5.2-2025-12-11';
 const CONTRACTS_DIR = path.join(__dirname, 'contracts');
 const OUTPUT_DIR = path.join(__dirname, 'extracted information saved csv');
 
-const SUPPORTED_EXT = new Set(['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif']);
+const SUPPORTED_EXT = CONTRACT_FILE_EXTENSIONS;
 
 /**
  * NC reference code from filenames like `NC_0450_NAME...pdf` → `0450`
@@ -62,21 +67,25 @@ function prepareFileInput(fileBuffer, mimeType, filename = 'document') {
     };
   }
 
+  if (
+    normalizedMimeType === DOCX_MIME_TYPE ||
+    normalizedFilename.toLowerCase().endsWith('.docx')
+  ) {
+    const fn = normalizedFilename.toLowerCase().endsWith('.docx')
+      ? normalizedFilename
+      : `${normalizedFilename}.docx`;
+    return {
+      type: 'input_file',
+      filename: fn,
+      file_data: `data:${DOCX_MIME_TYPE};base64,${base64}`,
+    };
+  }
+
   return {
     type: 'input_image',
     detail: 'auto',
     image_url: `data:${normalizedMimeType};base64,${base64}`,
   };
-}
-
-function mimeFromName(name) {
-  const ext = path.extname(name).toLowerCase();
-  if (ext === '.pdf') return 'application/pdf';
-  if (ext === '.png') return 'image/png';
-  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
-  if (ext === '.webp') return 'image/webp';
-  if (ext === '.gif') return 'image/gif';
-  return 'application/octet-stream';
 }
 
 const EXTRACTION_SCHEMA = {
@@ -402,7 +411,7 @@ export async function runExtractionPipeline(client, fileEntries) {
     const name = entry.name;
     const buf = entry.buffer;
     const rowFileName = entry.storagePath || name;
-    const mime = mimeFromName(name);
+    const mime = mimeFromContractFileName(name);
     const nc = extractNcFromFileName(name);
     const nameFromFile = extractNameFromFileName(name);
 
