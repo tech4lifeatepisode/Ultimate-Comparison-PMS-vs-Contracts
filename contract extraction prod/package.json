@@ -1,9 +1,10 @@
 {
-  "name": "contract-extraction-sandbox",
+  "name": "contract-extraction-prod",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "node server.mjs",
     "extract": "node extract-contracts.mjs"
   },
   "dependencies": {
