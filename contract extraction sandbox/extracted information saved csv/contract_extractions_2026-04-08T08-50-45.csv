@@ -1,0 +1,4 @@
+NC,Name,Dates,Rent,Deposit,deposit_wording,deposit_source,file_name,model_used,error
+0450,Dña. Laura Mercedes Vozza Rial,2025-09-04 / 2025-11-04,1310.00,655.00,"h) Depósito: Equivalente a media mensualidad, se abonará en su totalidad en la fecha de la firma del acuerdo.",computed_half_rent,NC_0450_LAURA_MERCEDES_VOZZA_RIAL.docx.pdf,gpt-5.2-2025-12-11,
+0792,D. Jacopo Moccia,2026-02-08 / 2026-08-08,1110.00,1250.00,"h) Depósito: El depósito se considera abonado en su totalidad en la fecha de firma del presente acuerdo, mediante la aplicación del importe ya entregado... por un importe de 1250€.",explicit_section_h,NC_0792_JACOPO_MOCCIAdocx.pdf,gpt-5.2-2025-12-11,
+0904,D. Fernando José Paulo,2026-02-10 / 2026-12-10,930.00,930.00,i) Depósito: Equivalente a una mensualidad se abonará en su totalidad en la fecha de la firma del acuerdo.,computed_1x_rent,NC_0904_FERNANDO_JOSE_PAULO_Contrato_de_hospedaje_turismo_-_B2C.docx.pdf,gpt-5.2-2025-12-11,

@@ -1,0 +1,4 @@
+file_name,tenant_name,rent_amount,security_deposit_amount,check_in_date,check_out_date,model_used,error
+NC_0450_LAURA_MERCEDES_VOZZA_RIAL.docx.pdf,Dña. Laura Mercedes Vozza Rial,1310.00,unknown,2025-09-04,2025-11-04,gpt-5.2-2025-12-11,
+NC_0792_JACOPO_MOCCIAdocx.pdf,D. Jacopo Moccia,1110.00,1250.00,2026-02-08,2026-08-08,gpt-5.2-2025-12-11,
+NC_0904_FERNANDO_JOSE_PAULO_Contrato_de_hospedaje_turismo_-_B2C.docx.pdf,D. Fernando José Paulo,837.00,unknown,2026-02-10,2026-12-10,gpt-5.2-2025-12-11,

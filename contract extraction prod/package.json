@@ -1,0 +1,13 @@
+{
+  "name": "contract-extraction-sandbox",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "node extract-contracts.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "openai": "^4.85.0"
+  }
+}
