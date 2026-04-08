@@ -96,7 +96,7 @@ const EXTRACTION_SCHEMA = {
       type: 'string',
       nullable: true,
       description:
-        'Nombre completo del huésped/inquilino tal como aparece en el SEGUNDO párrafo de la página 1 del contrato (no usar el filename). Si no hay segundo párrafo claro, null.',
+        'Nombre completo del huésped (persona física), típicamente en página 1 tras "De otra parte," o en el segundo párrafo. NUNCA la empresa arrendadora (p. ej. CHAMARI ITG, S.L. ni CHAMARI). Si no hay nombre de persona, null.',
     },
     guest_id_type: {
       type: 'string',
@@ -114,23 +114,23 @@ const EXTRACTION_SCHEMA = {
       type: 'string',
       nullable: true,
       description:
-        'Fecha de entrada / inicio de estancia (check-in) según ANEXO 1, ~página 17, SECCIÓN E. Solo YYYY-MM-DD. Si no consta, null.',
+        'Check-in YYYY-MM-DD: tras "Fecha de entrada:" dentro de "e) Duración de la estancia:" (y ANEXO 1 SECCIÓN E si aplica). No null si esa etiqueta tiene fecha.',
     },
     check_out_date: {
       type: 'string',
       nullable: true,
       description:
-        'Fecha de salida / fin de estancia (check-out) según ANEXO 1, ~página 17, SECCIÓN E. Solo YYYY-MM-DD. Si no consta, null.',
+        'Check-out YYYY-MM-DD: tras "Fecha de salida:" dentro de "e) Duración de la estancia:". No null si esa etiqueta tiene fecha.',
     },
     rent_section_f_pages_17_18: {
       type: 'string',
       description:
-        'Renta/canon principal: buscar en páginas 17–18 del PDF, SECCIÓN F. Número sin símbolo de moneda, punto decimal (ej. "1310.00"). Si no consta en §F, "unknown".',
+        'Precio/canon: tras "f) Precio:" y/o SECCIÓN F (p. 17–18). Solo dígitos y punto decimal. Evita "unknown" si hay cifra bajo "f) Precio:" o §F.',
     },
     deposit_section_h_pages_18_19: {
       type: 'string',
       description:
-        'Importe en euros de fianza/depósito si aparece cifra explícita en SECCIÓN H (~p. 18–19). Solo dígitos y punto decimal, o "unknown" si no hay cifra clara ahí.',
+        'Cifra de fianza/depósito en € si consta bajo "i) Depósito:", "Forma de pago:", o SECCIÓN H. Solo dígitos y punto decimal, o "unknown" solo si no hay cifra en ningún sitio tras buscar esas etiquetas.',
     },
     fianza_rule_from_wording: {
       type: 'string',
@@ -168,14 +168,25 @@ function escapeCsvCell(cell) {
 }
 
 /**
- * Prefer document name; else filename-derived name.
+ * Company / landlord — never use as guest name.
+ * @param {string | null | undefined} s
+ */
+function isChamariName(s) {
+  if (s == null || typeof s !== 'string') return false;
+  const u = s.toUpperCase().normalize('NFD').replace(/\p{M}/gu, '');
+  return u.includes('CHAMARI');
+}
+
+/**
+ * Prefer document name; else filename-derived name. Rejects CHAMARI / landlord strings.
  * @param {string | null | undefined} fromDoc
  * @param {string} fromFile
  */
 function resolveName(fromDoc, fromFile) {
-  const a = (fromDoc && String(fromDoc).trim()) || '';
+  let a = (fromDoc && String(fromDoc).trim()) || '';
+  if (isChamariName(a)) a = '';
   if (a) return a;
-  return fromFile || '';
+  return (fromFile && String(fromFile).trim()) || '';
 }
 
 /**
@@ -275,45 +286,16 @@ function formatIdTypeForCsv(t) {
 
 /**
  * @param {import('openai').OpenAI} client
+ * @param {string} instructions
  * @param {Buffer} fileBuffer
  * @param {string} mimeType
  * @param {string} fileName
- * @param {string} ncHint
- * @param {string} nameFromFileHint
  */
-async function extractSpanishRentalContract(client, fileBuffer, mimeType, fileName, ncHint, nameFromFileHint) {
-  const instructions = `Eres un extractor para contratos de hospedaje/arrendamiento en español.
-
-Prioriza la UBICACIÓN en el PDF (la numeración de página puede coincidir con "página 17 impresa" del anexo; si el visor muestra otra numeración, localiza ANEXO 1 y las secciones por su TÍTULO "E", "F", "H").
-
-1) name_second_paragraph_page1: Lee la PÁGINA 1 del contrato. El nombre del huésped/arrendatario suele estar en el SEGUNDO párrafo (no el primero). Copia el nombre tal cual. Si no existe un segundo párrafo identificable, devuelve null. (No rellenes con el nombre del archivo.)
-
-1b) guest_id_type y guest_id_number: En la página 1 o bloque de datos del huésped, identifica el documento: DNI/NIE español → guest_id_type DNI; pasaporte extranjero → PASAPORTE. Copia el número exacto (DNI: 12345678A; NIE: X1234567L; pasaporte: alfanumérico según conste). Si no aparece documento, guest_id_type unknown y guest_id_number null.
-
-2) check_in_date y check_out_date: En ANEXO 1, SECCIÓN E (suele estar hacia la página 17 del PDF), extrae por separado la fecha de entrada/inicio de estancia (check-in) y la fecha de salida/fin (check-out). Cada una en formato YYYY-MM-DD. Si no aparece el Anexo 1 o la sección E, null en la que falte.
-
-3) rent_section_f_pages_17_18: En SECCIÓN F (páginas ~17–18), importe de la renta/canon periódico acordado. Solo cifras y punto decimal, sin €. Si no aparece en §F, "unknown".
-
-4) deposit_section_h_pages_18_19: En SECCIÓN H (páginas ~18–19), si hay CIFRA explícita de fianza en euros, repítela (solo número). Si NO hay cifra clara en §H, devuelve "unknown".
-
-5) fianza_rule_from_wording y deposit_wording_snippet: Si no hay cifra explícita en §H (o para documentar la regla), busca en TODO el contrato (prioriza §H y cláusulas de fianza/depósito) la redacción típica:
-   - UNA mensualidad / un mes de renta / equivalente al canon de una mensualidad / "fianza legal" equivalente a una renta → fianza_rule_from_wording = one_month_of_rent
-   - MEDIA mensualidad / mitad de una mensualidad / 50% del canon / medio mes de renta → half_month_of_rent
-   - Si además hay cifra explícita en §H que coincide con esa regla, usa explicit_in_section_h y rellena deposit_section_h_pages_18_19 con el número.
-   - Si hay cifra explícita en §H, fianza_rule_from_wording = explicit_in_section_h
-   - Si no encuentras ni cifra ni redacción clara: unknown
-   En deposit_wording_snippet copia una frase corta literal o casi literal donde conste (máx. 240 caracteres). Si hay redacción de fianza (una/media mensualidad) aunque el modelo dude en el enum, sigue rellenando deposit_wording_snippet: el sistema puede calcular el importe a partir del canon.
-
-Pistas de contexto (no inventar datos; solo ayuda si el PDF coincide):
-- Código NC del expediente (referencia): ${ncHint || 'desconocido'}
-- Nombre aproximado por nombre de archivo (solo si el PDF no da nombre claro en página 1): ${nameFromFileHint || 'N/A'}
-
-Devuelve JSON estricto según el esquema. Usa null o "unknown" cuando falte información; no adivines cifras.`;
-
+async function parseContractExtractionResponse(client, instructions, fileBuffer, mimeType, fileName) {
   const payload = {
     model: DEFAULT_MODEL,
     temperature: 0,
-    max_output_tokens: 1200,
+    max_output_tokens: 1600,
     input: [
       {
         role: 'user',
@@ -342,24 +324,115 @@ Devuelve JSON estricto según el esquema. Usa null o "unknown" cuando falte info
       parsed = {};
     }
   }
-  parsed = parsed || {};
+  return parsed || {};
+}
+
+/**
+ * Second pass: same document, stricter anchors when first pass left gaps or CHAMARI as name.
+ * @param {string} ncHint
+ * @param {string} nameFromFileHint
+ */
+function buildRefinementInstructions(ncHint, nameFromFileHint) {
+  return `REINTENTO OBLIGATORIO — Relee el MISMO documento y devuelve el JSON completo otra vez.
+
+Corrige si hace falta:
+- Nombre del huésped: persona física. NUNCA "CHAMARI ITG, S.L.", "CHAMARI", ni la arrendadora; suele estar en página 1 tras "De otra parte," (no el segundo párrafo si allí solo está la empresa).
+- Fechas YYYY-MM-DD: bajo "e) Duración de la estancia:" → "Fecha de entrada:" (check-in) y "Fecha de salida:" (check-out). Busca también ANEXO 1 / SECCIÓN E si hace falta.
+- Precio/canon: bajo "f) Precio:" y/o SECCIÓN F; no uses "unknown" si hay cifra.
+- Depósito/fianza: bajo "i) Depósito:", "Forma de pago:", y SECCIÓN H; cifra o redacción para una/media mensualidad.
+
+Pistas: NC ${ncHint || 'desconocido'}; nombre por archivo (solo si falta en PDF): ${nameFromFileHint || 'N/A'}`;
+}
+
+/**
+ * @param {object} parsed
+ * @param {string} checkIn
+ * @param {string} checkOut
+ * @param {string} rent
+ * @param {string} depositResolved
+ */
+function shouldRunRefinementPass(parsed, checkIn, checkOut, rent, depositResolved) {
+  if (isChamariName(parsed.name_second_paragraph_page1)) return true;
+  if (!checkIn || !checkOut) return true;
+  if (!rent || rent === 'unknown') return true;
+  if (!depositResolved || depositResolved === 'unknown') return true;
+  return false;
+}
+
+/**
+ * @param {import('openai').OpenAI} client
+ * @param {Buffer} fileBuffer
+ * @param {string} mimeType
+ * @param {string} fileName
+ * @param {string} ncHint
+ * @param {string} nameFromFileHint
+ */
+async function extractSpanishRentalContract(client, fileBuffer, mimeType, fileName, ncHint, nameFromFileHint) {
+  const instructions = `Eres un extractor para contratos de hospedaje/arrendamiento en español.
+
+REGLAS CRÍTICAS (prioridad):
+- NUNCA uses como nombre de huésped "CHAMARI ITG, S.L.", "CHAMARI", ni variantes: es la empresa arrendadora, no la persona. Si tras "De otra parte," solo aparece la empresa, busca el nombre del huésped (persona física) en el mismo bloque, líneas siguientes, o en el segundo párrafo de la página 1.
+- Nombre del huésped: PÁGINA 1, típicamente después de "De otra parte,". Si no hay esa etiqueta, el segundo párrafo de la página 1 (no el nombre del archivo salvo pista abajo).
+- Check-in / check-out: en "e) Duración de la estancia:" la fecha de entrada va tras "Fecha de entrada:" y la de salida tras "Fecha de salida:". Formato YYYY-MM-DD. Prioriza también ANEXO 1 SECCIÓN E (~p. 17) si el contrato lo enlaza. No dejes fechas vacías si esas etiquetas tienen valores en el PDF.
+- Precio/renta: bajo "f) Precio:" y en SECCIÓN F (páginas ~17–18). Solo cifras y punto decimal, sin €. No devuelvas "unknown" si existe precio bajo "f) Precio:" o §F.
+- Depósito/fianza: bajo "i) Depósito:", "Forma de pago:", y SECCIÓN H (p. ~18–19). Busca cifra en €; si solo hay texto (una mensualidad, media mensualidad), rellena deposit_wording_snippet y fianza_rule_from_wording. Evita "unknown" si hay información bajo esas etiquetas.
+
+Prioriza la UBICACIÓN en el PDF (la numeración de página puede coincidir con "página 17 impresa" del anexo; localiza ANEXO 1 y secciones por título "E", "F", "H" y las etiquetas literales anteriores).
+
+1) name_second_paragraph_page1: Huésped persona física; página 1 tras "De otra parte," o segundo párrafo. Nunca CHAMARI/empresa. null solo si no hay nombre de persona.
+
+1b) guest_id_type y guest_id_number: Página 1 o bloque huésped: DNI/NIE → DNI; pasaporte → PASAPORTE. Número exacto. Si no consta, guest_id_type unknown y guest_id_number null.
+
+2) check_in_date y check_out_date: "Fecha de entrada:" y "Fecha de salida:" dentro de "e) Duración de la estancia:" y/o ANEXO 1 SECCIÓN E. YYYY-MM-DD.
+
+3) rent_section_f_pages_17_18: "f) Precio:" y/o SECCIÓN F. Sin €.
+
+4) deposit_section_h_pages_18_19: Cifra explícita bajo "i) Depósito:", "Forma de pago:", o §H.
+
+5) fianza_rule_from_wording y deposit_wording_snippet:
+   - UNA mensualidad / un mes de renta / equivalente al canon de una mensualidad → one_month_of_rent
+   - MEDIA mensualidad / mitad / 50% → half_month_of_rent
+   - Cifra explícita en §H o bajo "i) Depósito:" → explicit_in_section_h y rellena la cifra en deposit_section_h_pages_18_19
+   - Si no hay cifra pero sí redacción, unknown solo en el enum si no encaja; igualmente deposit_wording_snippet con cita breve (máx. 240 caracteres).
+
+Pistas (no inventar; solo si coincide el PDF):
+- NC: ${ncHint || 'desconocido'}
+- Nombre aproximado por archivo (si el PDF no da nombre claro de persona): ${nameFromFileHint || 'N/A'}
+
+Devuelve JSON según el esquema. Agota la búsqueda por "De otra parte,", "e) Duración", "Fecha de entrada/salida", "f) Precio:", "i) Depósito:", "Forma de pago:" y ANEXO/§F/§H antes de null o "unknown". No inventes cifras que no estén en el documento.`;
+
+  let parsed = await parseContractExtractionResponse(client, instructions, fileBuffer, mimeType, fileName);
+
+  let checkIn = (parsed.check_in_date && String(parsed.check_in_date).trim()) || '';
+  let checkOut = (parsed.check_out_date && String(parsed.check_out_date).trim()) || '';
+  let rent = parsed.rent_section_f_pages_17_18 ?? 'unknown';
+  const depositRaw = parsed.deposit_section_h_pages_18_19 ?? 'unknown';
+  const rule = parsed.fianza_rule_from_wording ?? 'unknown';
+  let wording = (parsed.deposit_wording_snippet && String(parsed.deposit_wording_snippet).trim()) || '';
+
+  let { deposit, source: depositSource } = resolveDeposit(depositRaw, rule, rent, wording);
+
+  if (
+    shouldRunRefinementPass(parsed, checkIn, checkOut, rent, deposit) &&
+    process.env.EXTRACTION_SKIP_REFINEMENT_PASS !== 'true'
+  ) {
+    const refined = `${instructions}\n\n${buildRefinementInstructions(ncHint, nameFromFileHint)}`;
+    parsed = await parseContractExtractionResponse(client, refined, fileBuffer, mimeType, fileName);
+    checkIn = (parsed.check_in_date && String(parsed.check_in_date).trim()) || '';
+    checkOut = (parsed.check_out_date && String(parsed.check_out_date).trim()) || '';
+    rent = parsed.rent_section_f_pages_17_18 ?? 'unknown';
+    const depositRaw2 = parsed.deposit_section_h_pages_18_19 ?? 'unknown';
+    const rule2 = parsed.fianza_rule_from_wording ?? 'unknown';
+    wording = (parsed.deposit_wording_snippet && String(parsed.deposit_wording_snippet).trim()) || '';
+    const resolved2 = resolveDeposit(depositRaw2, rule2, rent, wording);
+    deposit = resolved2.deposit;
+    depositSource = resolved2.source;
+  }
 
   const name = resolveName(parsed.name_second_paragraph_page1, nameFromFileHint);
   const idTypeRaw = parsed.guest_id_type ?? 'unknown';
   const idTypeDisplay = formatIdTypeForCsv(idTypeRaw);
   const idNumber = (parsed.guest_id_number && String(parsed.guest_id_number).trim()) || '';
-
-  const checkIn =
-    (parsed.check_in_date && String(parsed.check_in_date).trim()) || '';
-  const checkOut =
-    (parsed.check_out_date && String(parsed.check_out_date).trim()) || '';
-  const rent = parsed.rent_section_f_pages_17_18 ?? 'unknown';
-  const depositRaw = parsed.deposit_section_h_pages_18_19 ?? 'unknown';
-  const rule = parsed.fianza_rule_from_wording ?? 'unknown';
-  const wording =
-    (parsed.deposit_wording_snippet && String(parsed.deposit_wording_snippet).trim()) || '';
-
-  const { deposit, source: depositSource } = resolveDeposit(depositRaw, rule, rent, wording);
 
   return {
     nc: ncHint,
