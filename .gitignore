@@ -1,3 +1,6 @@
 **/node_modules/
 **/.env
 *.log
+
+# Local extraction outputs (timestamps in filenames)
+**/extracted information saved csv/
