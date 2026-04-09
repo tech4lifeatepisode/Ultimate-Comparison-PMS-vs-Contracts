@@ -4,3 +4,6 @@
 
 # Local extraction outputs (timestamps in filenames)
 **/extracted information saved csv/
+
+# Sandbox: local PDFs/DOCX used for testing (not for the repo)
+contract extraction sandbox/contracts/

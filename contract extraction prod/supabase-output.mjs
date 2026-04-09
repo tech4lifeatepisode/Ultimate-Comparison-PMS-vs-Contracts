@@ -8,12 +8,21 @@ import path from 'path';
 function rowToRecord(row) {
   return {
     nc: row.nc ?? null,
+    contract_title: row.contract_title ?? null,
     name: row.name ?? null,
     id_type: row.id_type ?? null,
     id_number: row.id_number ?? null,
+    number_of_people: row.number_of_people ?? null,
+    unit_type: row.unit_type ?? null,
     check_in_date: row.check_in_date ?? null,
     check_out_date: row.check_out_date ?? null,
-    rent: row.rent ?? null,
+    base_rent: row.base_rent ?? null,
+    extra_name: row.extra_name ?? null,
+    extra_price: row.extra_price ?? null,
+    discount_type: row.discount_type ?? null,
+    price_after_discount: row.price_after_discount ?? null,
+    discount_price: row.discount_price ?? null,
+    final_rent: row.final_rent ?? null,
     deposit: row.deposit ?? null,
     deposit_wording: row.deposit_wording ?? null,
     deposit_source: row.deposit_source ?? null,
@@ -37,7 +46,7 @@ async function insertContractRows(supabase, records) {
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
  * @param {string} csvPath
  * @param {string} bucket
- * @param {string} folderPrefix e.g. "To Fill 2"
+ * @param {string} folderPrefix e.g. "To Fill 1"
  */
 async function uploadCsvToStorage(supabase, csvPath, bucket, folderPrefix) {
   const buf = await fs.readFile(csvPath);
@@ -73,8 +82,7 @@ export async function syncExtractionsToSupabase({ csvPath, dataRows }) {
 
   const supabase = createClient(url, key);
   const bucket = process.env.SUPABASE_STORAGE_BUCKET;
-  const folder =
-    process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 2';
+  const folder = process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 1';
 
   const records = dataRows.map(rowToRecord);
   await insertContractRows(supabase, records);

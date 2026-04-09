@@ -92,65 +92,144 @@ const EXTRACTION_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
-    name_second_paragraph_page1: {
+    is_constancia_deposito_reserva: {
+      type: 'boolean',
+      description:
+        'true si el título del documento es (o equivale a) CONSTANCIA DE DEPÓSITO - RESERVA DE ALOJAMIENTO TEMPORAL.',
+    },
+    contract_title_header: {
       type: 'string',
       nullable: true,
       description:
-        'Nombre completo del huésped (persona física), típicamente en página 1 tras "De otra parte," o en el segundo párrafo. NUNCA la empresa arrendadora (p. ej. CHAMARI ITG, S.L. ni CHAMARI). Si no hay nombre de persona, null.',
+        'Encabezado / título principal del contrato (primera página o bloque de título). null si no hay título claro.',
+    },
+    tenant_name_after_de_otra_parte: {
+      type: 'string',
+      nullable: true,
+      description:
+        'Nombre completo del arrendatario inmediatamente DESPUÉS de "De otra parte,". null si no consta.',
     },
     guest_id_type: {
       type: 'string',
-      enum: ['DNI', 'PASAPORTE', 'unknown'],
+      enum: ['DNI', 'PASAPORTE', 'ID', 'unknown'],
       description:
-        'Tipo de documento del huésped/arrendatario (página 1, datos identificativos o primeras cláusulas). DNI o NIE (documento español) → DNI. Pasaporte → PASAPORTE. Si no consta, unknown.',
+        'Tras el nombre: DNI/NIE → DNI; Pasaporte → PASAPORTE; otro documento genérico → ID; si no consta, unknown.',
     },
     guest_id_number: {
       type: 'string',
       nullable: true,
+      description: 'Número del documento tras el tipo. null si no aparece.',
+    },
+    number_of_people: {
+      type: 'integer',
       description:
-        'Número completo: DNI (8 dígitos + letra), NIE (letra inicial X/Y/Z + 7 dígitos + letra), o número de pasaporte tal como en el PDF. Sin inventar. null si no aparece.',
+        'Valor tras "Nº de personas:" / "- Nº de personas:". Si no se menciona en el documento, 1.',
+    },
+    unit_type: {
+      type: 'string',
+      nullable: true,
+      description: 'Texto tras "Tipo de unidad alojativa:". null si no consta.',
     },
     check_in_date: {
       type: 'string',
       nullable: true,
       description:
-        'Check-in YYYY-MM-DD: tras "Fecha de entrada:" dentro de "e) Duración de la estancia:" (y ANEXO 1 SECCIÓN E si aplica). No null si esa etiqueta tiene fecha.',
+        'Check-in YYYY-MM-DD tras "Fecha de entrada:" en "Duración de la estancia:" o ANEXO 1 SECCIÓN E.',
     },
     check_out_date: {
       type: 'string',
       nullable: true,
       description:
-        'Check-out YYYY-MM-DD: tras "Fecha de salida:" dentro de "e) Duración de la estancia:". No null si esa etiqueta tiene fecha.',
+        'Check-out YYYY-MM-DD tras "Fecha de salida:" en "Duración de la estancia:" o SECCIÓN E. Si is_constancia_deposito_reserva, null.',
+    },
+    base_rent_from_precio: {
+      type: 'string',
+      description:
+        'Renta base bajo "Precio:" (solo dígitos y punto, ej. "1015.00"). Si aparece "Considerando 100 euros de suplemento por segunda persona." y el importe mostrado incluye esos 100 €, RESTAR 100 aquí (ej. 1115 → 1015). Si no hay precio claro, "unknown".',
+    },
+    second_person_supplement_euros: {
+      type: 'string',
+      nullable: true,
+      description:
+        'Si aparece la frase del suplemento por segunda persona (100 €), "100"; si no, null.',
+    },
+    second_person_supplement_label: {
+      type: 'string',
+      nullable: true,
+      description:
+        'Si aplica, "suplemento por segunda persona"; si no, null.',
+    },
+    discount_type: {
+      type: 'string',
+      nullable: true,
+      description:
+        'En "Descuento Aplicado en el Precio:" el tipo (ej. "10%"). null si no hay.',
+    },
+    price_after_discount_euros: {
+      type: 'string',
+      nullable: true,
+      description:
+        'Precio mensual TRAS el descuento: el importe en euros (solo número) que aparece tras la frase "por lo que el importe a abonar mensualmente será de" (puede haber salto de línea antes del número). null si no hay descuento o no consta esa cifra.',
+    },
+    additional_services: {
+      type: 'array',
+      description:
+        'Solo servicios bajo la línea "Pensión:" (meal plan u opciones de pensión). NO incluir suplemento segunda persona aquí. Array vacío si no hay Pensión.',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          service_name: {
+            type: 'string',
+            description: 'Texto de la opción Pensión tal como en el PDF (ej. "Pensión: low Meal Plan").',
+          },
+          monthly_price_text: {
+            type: 'string',
+            description: 'Precio tal como en el PDF (ej. "155€/mes").',
+          },
+        },
+        required: ['service_name', 'monthly_price_text'],
+      },
     },
     rent_section_f_pages_17_18: {
       type: 'string',
       description:
-        'Precio/canon: tras "f) Precio:" y/o SECCIÓN F (p. 17–18). Solo dígitos y punto decimal. Evita "unknown" si hay cifra bajo "f) Precio:" o §F.',
+        'Respaldo: canon en SECCIÓN F (~p. 17–18) si existe; solo número o "unknown".',
     },
     deposit_section_h_pages_18_19: {
       type: 'string',
       description:
-        'Cifra de fianza/depósito en € si consta bajo "i) Depósito:", "Forma de pago:", o SECCIÓN H. Solo dígitos y punto decimal, o "unknown" solo si no hay cifra en ningún sitio tras buscar esas etiquetas.',
+        'Cifra explícita de fianza en SECCIÓN H (~p. 18–19) o "unknown".',
     },
     fianza_rule_from_wording: {
       type: 'string',
       enum: ['explicit_in_section_h', 'one_month_of_rent', 'half_month_of_rent', 'unknown'],
       description:
-        'explicit_in_section_h: hay importe explícito en §H. one_month_of_rent: el contrato dice que la fianza equivale a UNA mensualidad/un mes de renta/canon (sin cifra en §H o además). half_month_of_rent: MEDIA mensualidad, mitad del mes, 50% del canon. unknown: no se deduce.',
+        'explicit_in_section_h, one_month_of_rent, half_month_of_rent, o unknown.',
     },
     deposit_wording_snippet: {
       type: 'string',
       nullable: true,
       description:
-        'Cita breve (máx. 240 caracteres) del párrafo o cláusula donde se define la fianza (§H u otra cláusula de fianza). Incluye la expresión clave (ej. "una mensualidad", "media mensualidad"). null si no hay texto útil.',
+        'Cita breve (máx. 240 caracteres) de la cláusula de fianza/depósito. null si no hay.',
     },
   },
   required: [
-    'name_second_paragraph_page1',
+    'is_constancia_deposito_reserva',
+    'contract_title_header',
+    'tenant_name_after_de_otra_parte',
     'guest_id_type',
     'guest_id_number',
+    'number_of_people',
+    'unit_type',
     'check_in_date',
     'check_out_date',
+    'base_rent_from_precio',
+    'second_person_supplement_euros',
+    'second_person_supplement_label',
+    'discount_type',
+    'price_after_discount_euros',
+    'additional_services',
     'rent_section_f_pages_17_18',
     'deposit_section_h_pages_18_19',
     'fianza_rule_from_wording',
@@ -168,25 +247,14 @@ function escapeCsvCell(cell) {
 }
 
 /**
- * Company / landlord — never use as guest name.
- * @param {string | null | undefined} s
- */
-function isChamariName(s) {
-  if (s == null || typeof s !== 'string') return false;
-  const u = s.toUpperCase().normalize('NFD').replace(/\p{M}/gu, '');
-  return u.includes('CHAMARI');
-}
-
-/**
- * Prefer document name; else filename-derived name. Rejects CHAMARI / landlord strings.
+ * Prefer document name; else filename-derived name.
  * @param {string | null | undefined} fromDoc
  * @param {string} fromFile
  */
 function resolveName(fromDoc, fromFile) {
-  let a = (fromDoc && String(fromDoc).trim()) || '';
-  if (isChamariName(a)) a = '';
+  const a = (fromDoc && String(fromDoc).trim()) || '';
   if (a) return a;
-  return (fromFile && String(fromFile).trim()) || '';
+  return fromFile || '';
 }
 
 /**
@@ -198,6 +266,108 @@ function parseMoneyAmount(s) {
   const t = String(s).trim().replace(/\s/g, '').replace(',', '.');
   const n = parseFloat(t);
   return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Parse amounts like "155€/mes", "1.115,00 €"
+ * @param {string | null | undefined} s
+ * @returns {number | null}
+ */
+function parseMoneyFlexible(s) {
+  if (s == null || s === '' || s === 'unknown') return null;
+  const direct = parseMoneyAmount(s);
+  if (direct != null) return direct;
+  const cleaned = String(s)
+    .replace(/€/g, '')
+    .replace(/\/mes/gi, '')
+    .replace(/\s/g, '')
+    .trim();
+  const fromDigit = cleaned.slice(Math.max(0, cleaned.search(/\d/)));
+  const eu = fromDigit.match(/^(\d{1,3}(?:\.\d{3})*),(\d{1,2})$/);
+  if (eu) {
+    const n = parseFloat(eu[1].replace(/\./g, '') + '.' + eu[2]);
+    return Number.isFinite(n) ? n : null;
+  }
+  const t = fromDigit.replace(/\./g, '').replace(',', '.');
+  const m = t.match(/-?\d+(?:\.\d+)?/);
+  if (!m) return null;
+  const n = parseFloat(m[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Final monthly rent = (price after discount if present, else base) + segunda persona + Pensión extras.
+ * Equivalent to base − discount_amount + extras when price_after = base − discount_amount.
+ * @param {number | null} base
+ * @param {number | null} priceAfterDiscount
+ * @param {number | null} secondPerson
+ * @param {number[]} extras
+ */
+function computeFinalRentPrice(base, priceAfterDiscount, secondPerson, extras) {
+  const sp = secondPerson ?? 0;
+  const ex = (extras || []).reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+  const core = priceAfterDiscount != null ? priceAfterDiscount : base;
+  if (core == null) return null;
+  return core + sp + ex;
+}
+
+/**
+ * @param {number | null} base
+ * @param {number | null} priceAfterDiscount
+ */
+function computeDiscountAmountFromBaseAndPriceAfter(base, priceAfterDiscount) {
+  if (base == null || priceAfterDiscount == null) return null;
+  const d = base - priceAfterDiscount;
+  return Number.isFinite(d) ? d : null;
+}
+
+/**
+ * Extra CSV columns only: suplemento segunda persona + líneas Pensión (meal plan).
+ * @param {string | null | undefined} serviceName
+ */
+function isPensionExtraName(serviceName) {
+  if (!serviceName || typeof serviceName !== 'string') return false;
+  const n = serviceName
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase();
+  return /\bpension\b/.test(n) || /\bmeal\s*plan\b/.test(n);
+}
+
+/**
+ * Build extra_name / extra_price and numeric pension amounts for final rent.
+ * @param {object} parsed
+ */
+function buildExtrasForCsvAndTotals(parsed) {
+  const names = [];
+  const prices = [];
+  const pensionAmounts = [];
+
+  const label = parsed.second_person_supplement_label && String(parsed.second_person_supplement_label).trim();
+  const spEuros = parseMoneyAmount(parsed.second_person_supplement_euros);
+  if (label && spEuros != null) {
+    names.push(label);
+    prices.push(String(spEuros));
+  } else if (spEuros != null && spEuros > 0) {
+    names.push('suplemento por segunda persona');
+    prices.push(String(spEuros));
+  }
+
+  const services = Array.isArray(parsed.additional_services) ? parsed.additional_services : [];
+  for (const row of services) {
+    const sn = row && row.service_name != null ? String(row.service_name) : '';
+    if (!sn || !isPensionExtraName(sn)) continue;
+    const amt = parseMoneyFlexible(row.monthly_price_text);
+    names.push(sn.trim());
+    prices.push(amt != null ? String(amt) : (row.monthly_price_text != null ? String(row.monthly_price_text) : ''));
+    if (amt != null) pensionAmounts.push(amt);
+  }
+
+  return {
+    extra_name: names.length ? names.join('; ') : '',
+    extra_price: prices.length ? prices.join('; ') : '',
+    pensionAmounts,
+  };
 }
 
 /**
@@ -239,13 +409,61 @@ function inferDepositRuleFromWording(wording) {
 }
 
 /**
- * Resolves final deposit: explicit € in §H, else computed from rent × rule or inferred from wording.
+ * Amount after "por un importe de" in depósito / fianza wording (Spanish formats).
+ * @param {string | null | undefined} wording
+ * @returns {number | null}
+ */
+function parseExplicitDepositImporteDe(wording) {
+  if (!wording || typeof wording !== 'string') return null;
+  const m = wording.match(
+    /por\s+un\s+importe\s+de\s*([\d]{1,3}(?:\.\d{3})*(?:,\d{1,2})?|[\d]+(?:[.,]\d{1,2})?)\s*€?/i,
+  );
+  if (!m) return null;
+  return parseMoneyFlexible(m[1]);
+}
+
+/**
+ * Exact standard clauses: compute deposit from base rent only (not final).
+ * @param {string | null | undefined} wording
+ */
+function matchesUnaMensualidadFirmaWording(wording) {
+  if (!wording || typeof wording !== 'string') return false;
+  const n = wording
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  return (
+    n.includes('equivalente a una mensualidad') &&
+    n.includes('se abonara en su totalidad en la fecha de la firma del acuerdo')
+  );
+}
+
+/**
+ * @param {string | null | undefined} wording
+ */
+function matchesMediaMensualidadFirmaWording(wording) {
+  if (!wording || typeof wording !== 'string') return false;
+  const n = wording
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  return (
+    n.includes('equivalente a media mensualidad') &&
+    n.includes('se abonara en su totalidad en la fecha de la firma del acuerdo')
+  );
+}
+
+/**
+ * Resolves deposit: explicit §H; else "por un importe de" in wording; else standard una/media clauses use base rent;
+ * else inferred rule × base rent (not final rent).
  * @param {string} depositRaw
  * @param {string} rule
- * @param {string} rentRaw
+ * @param {string} baseRentRaw
  * @param {string} wording
  */
-function resolveDeposit(depositRaw, rule, rentRaw, wording) {
+function resolveDeposit(depositRaw, rule, baseRentRaw, wording) {
   const explicit = parseMoneyAmount(depositRaw);
   if (explicit != null) {
     return {
@@ -254,9 +472,24 @@ function resolveDeposit(depositRaw, rule, rentRaw, wording) {
     };
   }
 
-  const rent = parseMoneyAmount(rentRaw);
-  if (rent == null) {
+  const fromImporteDe = parseExplicitDepositImporteDe(wording);
+  if (fromImporteDe != null) {
+    return {
+      deposit: fromImporteDe.toFixed(2),
+      source: 'explicit_from_section',
+    };
+  }
+
+  const base = parseMoneyAmount(baseRentRaw);
+  if (base == null) {
     return { deposit: 'unknown', source: 'unknown' };
+  }
+
+  if (wording && matchesUnaMensualidadFirmaWording(wording)) {
+    return { deposit: base.toFixed(2), source: 'computed_1x_base_rent' };
+  }
+  if (wording && matchesMediaMensualidadFirmaWording(wording)) {
+    return { deposit: (base / 2).toFixed(2), source: 'computed_half_base_rent' };
   }
 
   let effectiveRule = rule;
@@ -266,10 +499,10 @@ function resolveDeposit(depositRaw, rule, rentRaw, wording) {
   }
 
   if (effectiveRule === 'one_month_of_rent') {
-    return { deposit: rent.toFixed(2), source: 'computed_1x_rent' };
+    return { deposit: base.toFixed(2), source: 'computed_1x_rent' };
   }
   if (effectiveRule === 'half_month_of_rent') {
-    return { deposit: (rent / 2).toFixed(2), source: 'computed_half_rent' };
+    return { deposit: (base / 2).toFixed(2), source: 'computed_half_rent' };
   }
 
   return { deposit: 'unknown', source: 'unknown' };
@@ -281,21 +514,56 @@ function resolveDeposit(depositRaw, rule, rentRaw, wording) {
 function formatIdTypeForCsv(t) {
   if (t === 'DNI') return 'D.N.I';
   if (t === 'PASAPORTE') return 'PASAPORTE';
+  if (t === 'ID') return 'ID';
   return '';
 }
 
 /**
  * @param {import('openai').OpenAI} client
- * @param {string} instructions
  * @param {Buffer} fileBuffer
  * @param {string} mimeType
  * @param {string} fileName
+ * @param {string} ncHint
+ * @param {string} nameFromFileHint
  */
-async function parseContractExtractionResponse(client, instructions, fileBuffer, mimeType, fileName) {
+async function extractSpanishRentalContract(client, fileBuffer, mimeType, fileName, ncHint, nameFromFileHint) {
+  const instructions = `Eres un extractor para contratos de hospedaje/arrendamiento en español.
+
+Contexto del sistema (no inventar datos; usar solo si coincide con el PDF):
+- Nombre del archivo: ${fileName}
+- Código NC extraído del nombre de archivo: ${ncHint || 'desconocido'}
+- Nombre aproximado por archivo (solo respaldo si el PDF no da nombre): ${nameFromFileHint || 'N/A'}
+
+Localiza secciones por títulos ("Duración de la estancia", ANEXO 1, SECCIÓN E / F / H); la numeración de página del visor puede diferir.
+
+1) is_constancia_deposito_reserva y contract_title_header: Lee el título/encabezado principal. Si es (o equivale a) "CONSTANCIA DE DEPÓSITO - RESERVA DE ALOJAMIENTO TEMPORAL", is_constancia_deposito_reserva = true; entonces check_out_date = null; extrae fecha de entrada y depósito si constan; deja en null lo que no exista.
+
+2) tenant_name_after_de_otra_parte: Nombre completo del arrendatario inmediatamente DESPUÉS de "De otra parte," (o variantes). Si no consta, null.
+
+3) guest_id_type y guest_id_number: Tras el nombre, tipo de documento (DNI/NIE → DNI; pasaporte → PASAPORTE; otro ID → ID) y número exacto. Si no hay documento, unknown y null.
+
+4) number_of_people: Valor tras "Nº de personas:" o "- Nº de personas:". Si no se menciona en el documento, devuelve 1.
+
+5) unit_type: Texto tras "Tipo de unidad alojativa:". null si no consta.
+
+6) check_in_date / check_out_date: Tras "Fecha de entrada:" y "Fecha de salida:" dentro de "Duración de la estancia:" (también puedes usar ANEXO 1 SECCIÓN E). Formato YYYY-MM-DD. Si is_constancia_deposito_reserva, check_out_date = null.
+
+7) base_rent_from_precio: Importe principal bajo "Precio:" (solo número con punto decimal, ej. "1015.00"). Si aparece "Considerando 100 euros de suplemento por segunda persona." y el precio mostrado incluye esos 100 €, RESTA 100 del importe mostrado y pon el resultado en base_rent_from_precio (ej. 1115 → 1015). second_person_supplement_euros = "100" y second_person_supplement_label = "suplemento por segunda persona" en ese caso; si no hay esa frase, null en esos campos.
+
+8) Descuento: Si existe "Descuento Aplicado en el Precio:", discount_type = porcentaje o tipo (ej. "10%"). price_after_discount_euros = el importe mensual en euros que aparece tras la frase "por lo que el importe a abonar mensualmente será de" (puede haber salto de línea; solo el número, ej. "837.00"). El sistema calculará el descuento en € como precio base menos ese importe. Si no hay descuento o no consta esa cifra, null.
+
+9) additional_services: SOLO líneas relacionadas con "Pensión:" (meal plan / opciones de pensión). NO incluir el suplemento por segunda persona aquí. Array vacío si no hay Pensión.
+
+10) rent_section_f_pages_17_18: Respaldo — canon en SECCIÓN F (~p. 17–18) si existe.
+
+11) deposit_section_h_pages_18_19, fianza_rule_from_wording, deposit_wording_snippet: En SECCIÓN H (~p. 18–19), cifra explícita de fianza si la hay; si no hay cifra clara, "unknown". Reglas: explicit_in_section_h si hay cifra en §H; one_month_of_rent / half_month_of_rent según redacción (una mensualidad vs media/50%); deposit_wording_snippet: cita breve (máx. 240 caracteres) de la cláusula de fianza.
+
+Devuelve JSON estricto según el esquema. Usa null o "unknown" cuando falte información; no adivines cifras.`;
+
   const payload = {
     model: DEFAULT_MODEL,
     temperature: 0,
-    max_output_tokens: 1600,
+    max_output_tokens: 3000,
     input: [
       {
         role: 'user',
@@ -324,124 +592,74 @@ async function parseContractExtractionResponse(client, instructions, fileBuffer,
       parsed = {};
     }
   }
-  return parsed || {};
-}
+  parsed = parsed || {};
 
-/**
- * Second pass: same document, stricter anchors when first pass left gaps or CHAMARI as name.
- * @param {string} ncHint
- * @param {string} nameFromFileHint
- */
-function buildRefinementInstructions(ncHint, nameFromFileHint) {
-  return `REINTENTO OBLIGATORIO — Relee el MISMO documento y devuelve el JSON completo otra vez.
-
-Corrige si hace falta:
-- Nombre del huésped: persona física. NUNCA "CHAMARI ITG, S.L.", "CHAMARI", ni la arrendadora; suele estar en página 1 tras "De otra parte," (no el segundo párrafo si allí solo está la empresa).
-- Fechas YYYY-MM-DD: bajo "e) Duración de la estancia:" → "Fecha de entrada:" (check-in) y "Fecha de salida:" (check-out). Busca también ANEXO 1 / SECCIÓN E si hace falta.
-- Precio/canon: bajo "f) Precio:" y/o SECCIÓN F; no uses "unknown" si hay cifra.
-- Depósito/fianza: bajo "i) Depósito:", "Forma de pago:", y SECCIÓN H; cifra o redacción para una/media mensualidad.
-
-Pistas: NC ${ncHint || 'desconocido'}; nombre por archivo (solo si falta en PDF): ${nameFromFileHint || 'N/A'}`;
-}
-
-/**
- * @param {object} parsed
- * @param {string} checkIn
- * @param {string} checkOut
- * @param {string} rent
- * @param {string} depositResolved
- */
-function shouldRunRefinementPass(parsed, checkIn, checkOut, rent, depositResolved) {
-  if (isChamariName(parsed.name_second_paragraph_page1)) return true;
-  if (!checkIn || !checkOut) return true;
-  if (!rent || rent === 'unknown') return true;
-  if (!depositResolved || depositResolved === 'unknown') return true;
-  return false;
-}
-
-/**
- * @param {import('openai').OpenAI} client
- * @param {Buffer} fileBuffer
- * @param {string} mimeType
- * @param {string} fileName
- * @param {string} ncHint
- * @param {string} nameFromFileHint
- */
-async function extractSpanishRentalContract(client, fileBuffer, mimeType, fileName, ncHint, nameFromFileHint) {
-  const instructions = `Eres un extractor para contratos de hospedaje/arrendamiento en español.
-
-REGLAS CRÍTICAS (prioridad):
-- NUNCA uses como nombre de huésped "CHAMARI ITG, S.L.", "CHAMARI", ni variantes: es la empresa arrendadora, no la persona. Si tras "De otra parte," solo aparece la empresa, busca el nombre del huésped (persona física) en el mismo bloque, líneas siguientes, o en el segundo párrafo de la página 1.
-- Nombre del huésped: PÁGINA 1, típicamente después de "De otra parte,". Si no hay esa etiqueta, el segundo párrafo de la página 1 (no el nombre del archivo salvo pista abajo).
-- Check-in / check-out: en "e) Duración de la estancia:" la fecha de entrada va tras "Fecha de entrada:" y la de salida tras "Fecha de salida:". Formato YYYY-MM-DD. Prioriza también ANEXO 1 SECCIÓN E (~p. 17) si el contrato lo enlaza. No dejes fechas vacías si esas etiquetas tienen valores en el PDF.
-- Precio/renta: bajo "f) Precio:" y en SECCIÓN F (páginas ~17–18). Solo cifras y punto decimal, sin €. No devuelvas "unknown" si existe precio bajo "f) Precio:" o §F.
-- Depósito/fianza: bajo "i) Depósito:", "Forma de pago:", y SECCIÓN H (p. ~18–19). Busca cifra en €; si solo hay texto (una mensualidad, media mensualidad), rellena deposit_wording_snippet y fianza_rule_from_wording. Evita "unknown" si hay información bajo esas etiquetas.
-
-Prioriza la UBICACIÓN en el PDF (la numeración de página puede coincidir con "página 17 impresa" del anexo; localiza ANEXO 1 y secciones por título "E", "F", "H" y las etiquetas literales anteriores).
-
-1) name_second_paragraph_page1: Huésped persona física; página 1 tras "De otra parte," o segundo párrafo. Nunca CHAMARI/empresa. null solo si no hay nombre de persona.
-
-1b) guest_id_type y guest_id_number: Página 1 o bloque huésped: DNI/NIE → DNI; pasaporte → PASAPORTE. Número exacto. Si no consta, guest_id_type unknown y guest_id_number null.
-
-2) check_in_date y check_out_date: "Fecha de entrada:" y "Fecha de salida:" dentro de "e) Duración de la estancia:" y/o ANEXO 1 SECCIÓN E. YYYY-MM-DD.
-
-3) rent_section_f_pages_17_18: "f) Precio:" y/o SECCIÓN F. Sin €.
-
-4) deposit_section_h_pages_18_19: Cifra explícita bajo "i) Depósito:", "Forma de pago:", o §H.
-
-5) fianza_rule_from_wording y deposit_wording_snippet:
-   - UNA mensualidad / un mes de renta / equivalente al canon de una mensualidad → one_month_of_rent
-   - MEDIA mensualidad / mitad / 50% → half_month_of_rent
-   - Cifra explícita en §H o bajo "i) Depósito:" → explicit_in_section_h y rellena la cifra en deposit_section_h_pages_18_19
-   - Si no hay cifra pero sí redacción, unknown solo en el enum si no encaja; igualmente deposit_wording_snippet con cita breve (máx. 240 caracteres).
-
-Pistas (no inventar; solo si coincide el PDF):
-- NC: ${ncHint || 'desconocido'}
-- Nombre aproximado por archivo (si el PDF no da nombre claro de persona): ${nameFromFileHint || 'N/A'}
-
-Devuelve JSON según el esquema. Agota la búsqueda por "De otra parte,", "e) Duración", "Fecha de entrada/salida", "f) Precio:", "i) Depósito:", "Forma de pago:" y ANEXO/§F/§H antes de null o "unknown". No inventes cifras que no estén en el documento.`;
-
-  let parsed = await parseContractExtractionResponse(client, instructions, fileBuffer, mimeType, fileName);
-
-  let checkIn = (parsed.check_in_date && String(parsed.check_in_date).trim()) || '';
-  let checkOut = (parsed.check_out_date && String(parsed.check_out_date).trim()) || '';
-  let rent = parsed.rent_section_f_pages_17_18 ?? 'unknown';
-  const depositRaw = parsed.deposit_section_h_pages_18_19 ?? 'unknown';
-  const rule = parsed.fianza_rule_from_wording ?? 'unknown';
-  let wording = (parsed.deposit_wording_snippet && String(parsed.deposit_wording_snippet).trim()) || '';
-
-  let { deposit, source: depositSource } = resolveDeposit(depositRaw, rule, rent, wording);
-
-  if (
-    shouldRunRefinementPass(parsed, checkIn, checkOut, rent, deposit) &&
-    process.env.EXTRACTION_SKIP_REFINEMENT_PASS !== 'true'
-  ) {
-    const refined = `${instructions}\n\n${buildRefinementInstructions(ncHint, nameFromFileHint)}`;
-    parsed = await parseContractExtractionResponse(client, refined, fileBuffer, mimeType, fileName);
-    checkIn = (parsed.check_in_date && String(parsed.check_in_date).trim()) || '';
-    checkOut = (parsed.check_out_date && String(parsed.check_out_date).trim()) || '';
-    rent = parsed.rent_section_f_pages_17_18 ?? 'unknown';
-    const depositRaw2 = parsed.deposit_section_h_pages_18_19 ?? 'unknown';
-    const rule2 = parsed.fianza_rule_from_wording ?? 'unknown';
-    wording = (parsed.deposit_wording_snippet && String(parsed.deposit_wording_snippet).trim()) || '';
-    const resolved2 = resolveDeposit(depositRaw2, rule2, rent, wording);
-    deposit = resolved2.deposit;
-    depositSource = resolved2.source;
-  }
-
-  const name = resolveName(parsed.name_second_paragraph_page1, nameFromFileHint);
+  const name = resolveName(parsed.tenant_name_after_de_otra_parte, nameFromFileHint);
+  const contractTitle =
+    (parsed.contract_title_header && String(parsed.contract_title_header).trim()) || '';
   const idTypeRaw = parsed.guest_id_type ?? 'unknown';
   const idTypeDisplay = formatIdTypeForCsv(idTypeRaw);
   const idNumber = (parsed.guest_id_number && String(parsed.guest_id_number).trim()) || '';
+  const numberOfPeople = Math.max(1, Number(parsed.number_of_people) || 1);
+  const unitType = (parsed.unit_type && String(parsed.unit_type).trim()) || '';
+
+  let checkIn = (parsed.check_in_date && String(parsed.check_in_date).trim()) || '';
+  let checkOut = (parsed.check_out_date && String(parsed.check_out_date).trim()) || '';
+  if (parsed.is_constancia_deposito_reserva) {
+    checkOut = '';
+  }
+
+  const baseRentRaw = parsed.base_rent_from_precio ?? 'unknown';
+  const base = parseMoneyAmount(baseRentRaw);
+  const secondPerson = parseMoneyAmount(parsed.second_person_supplement_euros);
+  const priceAfterDiscount = parseMoneyAmount(parsed.price_after_discount_euros);
+  const { extra_name, extra_price, pensionAmounts } = buildExtrasForCsvAndTotals(parsed);
+
+  const finalRent = computeFinalRentPrice(base, priceAfterDiscount, secondPerson, pensionAmounts);
+  const finalRentStr = finalRent != null ? finalRent.toFixed(2) : 'unknown';
+
+  const discountAmount = computeDiscountAmountFromBaseAndPriceAfter(base, priceAfterDiscount);
+  const discountPriceStr =
+    discountAmount != null ? discountAmount.toFixed(2) : '';
+  const priceAfterDiscountStr =
+    priceAfterDiscount != null
+      ? priceAfterDiscount.toFixed(2)
+      : parsed.price_after_discount_euros != null && String(parsed.price_after_discount_euros).trim()
+        ? String(parsed.price_after_discount_euros).trim()
+        : '';
+
+  const baseRentForDeposit =
+    base != null ? baseRentRaw : (parsed.rent_section_f_pages_17_18 ?? 'unknown');
+
+  const depositRaw = parsed.deposit_section_h_pages_18_19 ?? 'unknown';
+  const rule = parsed.fianza_rule_from_wording ?? 'unknown';
+  const wording =
+    (parsed.deposit_wording_snippet && String(parsed.deposit_wording_snippet).trim()) || '';
+
+  const { deposit, source: depositSource } = resolveDeposit(depositRaw, rule, baseRentForDeposit, wording);
+
+  const discountType =
+    parsed.discount_type != null && String(parsed.discount_type).trim()
+      ? String(parsed.discount_type).trim()
+      : '';
 
   return {
     nc: ncHint,
+    contract_title: contractTitle,
     name,
     id_type: idTypeDisplay,
     id_number: idNumber,
+    number_of_people: String(numberOfPeople),
+    unit_type: unitType,
     check_in_date: checkIn,
     check_out_date: checkOut,
-    rent,
+    base_rent: baseRentRaw,
+    extra_name,
+    extra_price,
+    discount_type: discountType,
+    price_after_discount: priceAfterDiscountStr,
+    discount_price: discountPriceStr,
+    final_rent: finalRentStr,
     deposit,
     deposit_wording: wording,
     deposit_source: depositSource,
@@ -462,12 +680,21 @@ export async function runExtractionPipeline(client, fileEntries) {
 
   const header = [
     'NC',
+    'contract_title',
     'Name',
     'Id type',
     'ID number',
+    'number_of_people',
+    'unit_type',
     'check_in_date',
     'check_out_date',
-    'Rent',
+    'base_rent',
+    'extra_name',
+    'extra_price',
+    'discount_type',
+    'price_after_discount',
+    'discount_price',
+    'final_rent',
     'Deposit',
     'deposit_wording',
     'deposit_source',
@@ -493,12 +720,21 @@ export async function runExtractionPipeline(client, fileEntries) {
       rows.push(
         [
           escapeCsvCell(data.nc),
+          escapeCsvCell(data.contract_title),
           escapeCsvCell(data.name),
           escapeCsvCell(data.id_type),
           escapeCsvCell(data.id_number),
+          escapeCsvCell(data.number_of_people),
+          escapeCsvCell(data.unit_type),
           escapeCsvCell(data.check_in_date),
           escapeCsvCell(data.check_out_date),
-          escapeCsvCell(data.rent),
+          escapeCsvCell(data.base_rent),
+          escapeCsvCell(data.extra_name),
+          escapeCsvCell(data.extra_price),
+          escapeCsvCell(data.discount_type),
+          escapeCsvCell(data.price_after_discount),
+          escapeCsvCell(data.discount_price),
+          escapeCsvCell(data.final_rent),
           escapeCsvCell(data.deposit),
           escapeCsvCell(data.deposit_wording),
           escapeCsvCell(data.deposit_source),
@@ -509,12 +745,21 @@ export async function runExtractionPipeline(client, fileEntries) {
       );
       dataRows.push({
         nc: data.nc,
+        contract_title: data.contract_title,
         name: data.name,
         id_type: data.id_type,
         id_number: data.id_number,
+        number_of_people: data.number_of_people,
+        unit_type: data.unit_type,
         check_in_date: data.check_in_date,
         check_out_date: data.check_out_date,
-        rent: data.rent,
+        base_rent: data.base_rent,
+        extra_name: data.extra_name,
+        extra_price: data.extra_price,
+        discount_type: data.discount_type,
+        price_after_discount: data.price_after_discount,
+        discount_price: data.discount_price,
+        final_rent: data.final_rent,
         deposit: data.deposit,
         deposit_wording: data.deposit_wording,
         deposit_source: data.deposit_source,
@@ -528,7 +773,17 @@ export async function runExtractionPipeline(client, fileEntries) {
       rows.push(
         [
           escapeCsvCell(nc),
+          escapeCsvCell(''),
           escapeCsvCell(nameFromFile),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
+          escapeCsvCell(''),
           escapeCsvCell(''),
           escapeCsvCell(''),
           escapeCsvCell(''),
@@ -544,12 +799,21 @@ export async function runExtractionPipeline(client, fileEntries) {
       );
       dataRows.push({
         nc,
+        contract_title: '',
         name: nameFromFile,
         id_type: '',
         id_number: '',
+        number_of_people: '',
+        unit_type: '',
         check_in_date: '',
         check_out_date: '',
-        rent: '',
+        base_rent: '',
+        extra_name: '',
+        extra_price: '',
+        discount_type: '',
+        price_after_discount: '',
+        discount_price: '',
+        final_rent: '',
         deposit: '',
         deposit_wording: '',
         deposit_source: '',
@@ -590,7 +854,7 @@ async function main() {
 
   if (files.length === 0) {
     console.log(
-      `No contract files found in "${path.basename(CONTRACTS_DIR)}". Add .pdf or image files and run again.`,
+      `No contract files found in "${path.basename(CONTRACTS_DIR)}". Add .pdf, .docx, or image files and run again.`,
     );
     process.exit(0);
   }

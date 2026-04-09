@@ -43,7 +43,7 @@ async function main() {
   const url = process.env.SUPABASE_URL;
   const key = getSupabaseKey();
   const bucket = process.env.SUPABASE_STORAGE_BUCKET;
-  const folder = (process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 2')
+  const folder = (process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 1')
     .replace(/\\/g, '/')
     .replace(/^\/+|\/+$/g, '');
 
