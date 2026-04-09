@@ -18,7 +18,7 @@ if (process.env.SKIP_ALREADY_EXTRACTED !== 'false') {
  * @returns {Promise<{ ok: boolean, totalProcessed: number, rounds: number, done: boolean, error?: string }>}
  */
 export async function runExtractFromSupabaseStorageUntilDone() {
-  const folder = (process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 1').replace(/\\/g, '/');
+  const folder = (process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 2').replace(/\\/g, '/');
   const max = process.env.MAX_EXTRACTION_FILES || '(unlimited)';
   console.log(
     '\n=== Full batch run: starting at batch 1 (first files in sorted order) ===\n' +

@@ -150,7 +150,7 @@ async function entriesFromPublicUrls(urlText) {
 }
 
 /**
- * Paths already stored in contract_extractions.file_name (full storage path, e.g. To Fill 1/x.pdf).
+ * Paths already stored in contract_extractions.file_name (full storage path, e.g. To Fill 2/x.pdf).
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
  */
 async function fetchAlreadyExtractedStoragePaths(supabase) {
@@ -180,7 +180,7 @@ export async function runExtractFromSupabaseStorage() {
   const key = getSupabaseKey();
   const bucket = process.env.SUPABASE_STORAGE_BUCKET;
   const folder =
-    (process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 1').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+    (process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 2').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
 
   if (!url || !key) {
     throw new Error('SUPABASE_URL and a Supabase key are required for storage extraction.');

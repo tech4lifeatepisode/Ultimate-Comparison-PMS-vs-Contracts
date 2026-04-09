@@ -34,7 +34,7 @@ comment on table public.contract_extractions is 'One row per contract file; colu
 comment on column public.contract_extractions.rent is 'Legacy "Rent" from older CSV exports; new pipeline uses base_rent / final_rent.';
 
 -- Storage: create a bucket in Dashboard > Storage (name must match SUPABASE_STORAGE_BUCKET, e.g. "Contracts").
--- Files are uploaded under the prefix set in SUPABASE_STORAGE_FOLDER (e.g. "To Fill 1/") inside that bucket.
+-- Files are uploaded under the prefix set in SUPABASE_STORAGE_FOLDER (e.g. "To Fill 2/") inside that bucket.
 
 -- Optional: allow anon uploads to that bucket (replace "contracts" with your bucket id).
 -- drop policy if exists "storage_insert_contracts_anon" on storage.objects;
