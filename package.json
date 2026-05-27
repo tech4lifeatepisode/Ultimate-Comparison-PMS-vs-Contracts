@@ -1,0 +1,9 @@
+{
+  "name": "ultimate-comparison-pms-vs-contracts",
+  "private": true,
+  "description": "Repo root for Render. Deploy entry point: contract extraction prod/",
+  "scripts": {
+    "postinstall": "npm install --prefix \"contract extraction prod\"",
+    "start": "npm start --prefix \"contract extraction prod\""
+  }
+}

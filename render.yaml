@@ -1,0 +1,12 @@
+# Render Blueprint — Web Service for contract extraction + blinding
+# https://contract-extraction-joyy.onrender.com
+services:
+  - type: web
+    name: contract-extraction
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
