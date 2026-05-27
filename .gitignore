@@ -2,11 +2,13 @@
 .env
 **/.env
 Blinding_Contracts/Blinding_Sandbox/.env
+Blinding_Contracts/Blinding_prod/.env
 
 # Dependencies
 node_modules/
 **/node_modules/
 Blinding_Contracts/Blinding_Sandbox/node_modules/
+Blinding_Contracts/Blinding_prod/node_modules/
 
 # Python
 __pycache__/
@@ -26,3 +28,5 @@ analysis_report.json
 # Contract blinding sandbox (local PDFs and output)
 Blinding_Contracts/Blinding_Sandbox/Contracts/
 Blinding_Contracts/Blinding_Sandbox/Blind Contracts/
+Blinding_Contracts/Blinding_prod/Contracts/
+Blinding_Contracts/Blinding_prod/Blind Contracts/

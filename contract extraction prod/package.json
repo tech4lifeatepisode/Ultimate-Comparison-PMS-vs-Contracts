@@ -4,10 +4,12 @@
   "type": "module",
   "description": "Render deploy entry point (rootDir). App code lives in Contract Extraction/contract extraction prod.",
   "scripts": {
-    "postinstall": "npm install --prefix \"../Contract Extraction/contract extraction prod\"",
+    "postinstall": "npm install --prefix \"../Contract Extraction/contract extraction prod\" && npm install --prefix \"../Blinding_Contracts/Blinding_prod\"",
     "start": "node \"../Contract Extraction/contract extraction prod/server.mjs\"",
     "extract": "node \"../Contract Extraction/contract extraction prod/extract-contracts.mjs\"",
-    "extract:storage": "node \"../Contract Extraction/contract extraction prod/extract-from-storage.mjs\""
+    "extract:storage": "node \"../Contract Extraction/contract extraction prod/extract-from-storage.mjs\"",
+    "blind": "node \"../Blinding_Contracts/Blinding_prod/blind-from-storage.mjs\"",
+    "blind:all": "node \"../Blinding_Contracts/Blinding_prod/blind-from-storage-batch.mjs\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

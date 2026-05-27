@@ -1,12 +1,16 @@
 /**
  * HTTP server for Render Web Service (binds to PORT).
- * Optional: AUTO_EXTRACT_FROM_STORAGE=true runs full batch loop (all pending files) after listen.
- * GET/POST /extract — one batch (MAX_EXTRACTION_FILES). X-Extract-Secret if EXTRACT_TRIGGER_SECRET set.
- * GET/POST /extract-all — loop until folder done (same auth).
+ * Contract extraction: /extract, /extract-all
+ * Contract blinding: /blind, /blind-all
  */
 import http from 'http';
 import { runExtractFromSupabaseStorage, isEnvTruthy } from './extract-from-storage.mjs';
 import { runExtractFromSupabaseStorageUntilDone } from './extract-from-storage-batch.mjs';
+import {
+  handleBlindRequest,
+  scheduleAutoBlindOnBoot,
+  blindHealthLines,
+} from './blinding-server.mjs';
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -92,10 +96,11 @@ const server = http.createServer(async (req, res) => {
   if (url === '/' || url === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end(
-      'Contract extraction service OK.\n' +
-        'AUTO_EXTRACT_FROM_STORAGE=true: on boot, runs all batches until the folder is done.\n' +
+      'Contract extraction + blinding service OK.\n' +
+        'AUTO_EXTRACT_FROM_STORAGE=true: on boot, runs all extraction batches until the folder is done.\n' +
         'POST/GET /extract — one batch (MAX_EXTRACTION_FILES). POST/GET /extract-all — until done.\n' +
-        'Optional header: X-Extract-Secret: <EXTRACT_TRIGGER_SECRET>\n',
+        'Optional header: X-Extract-Secret: <EXTRACT_TRIGGER_SECRET>\n\n' +
+        blindHealthLines(),
     );
     return;
   }
@@ -107,6 +112,16 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/extract-all' && (req.method === 'POST' || req.method === 'GET')) {
     handleExtractRequest(req, res, 'all');
+    return;
+  }
+
+  if (url === '/blind' && (req.method === 'POST' || req.method === 'GET')) {
+    handleBlindRequest(req, res, 'single');
+    return;
+  }
+
+  if (url === '/blind-all' && (req.method === 'POST' || req.method === 'GET')) {
+    handleBlindRequest(req, res, 'all');
     return;
   }
 
@@ -123,4 +138,6 @@ server.listen(port, '0.0.0.0', () => {
       safeRunExtractAll('startup').catch((e) => console.error(e));
     });
   }
+
+  scheduleAutoBlindOnBoot();
 });
