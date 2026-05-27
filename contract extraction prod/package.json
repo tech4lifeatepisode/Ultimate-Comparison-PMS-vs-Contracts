@@ -1,0 +1,17 @@
+{
+  "name": "contract-extraction-prod-deploy-root",
+  "private": true,
+  "type": "module",
+  "description": "Render deploy entry point (rootDir). App code lives in Contract Extraction/contract extraction prod.",
+  "scripts": {
+    "postinstall": "npm install --prefix \"../Contract Extraction/contract extraction prod\"",
+    "start": "node \"../Contract Extraction/contract extraction prod/server.mjs\"",
+    "extract": "node \"../Contract Extraction/contract extraction prod/extract-contracts.mjs\"",
+    "extract:storage": "node \"../Contract Extraction/contract extraction prod/extract-from-storage.mjs\""
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "dotenv": "^16.4.7",
+    "openai": "^4.85.0"
+  }
+}
