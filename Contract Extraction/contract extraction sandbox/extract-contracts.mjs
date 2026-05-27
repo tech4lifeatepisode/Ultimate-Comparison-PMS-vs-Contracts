@@ -310,6 +310,53 @@ function computeDiscountAmountFromBaseAndPriceAfter(base, priceAfterDiscount) {
   return Number.isFinite(d) ? d : null;
 }
 
+/** Max € difference to treat Precio and price_after_discount as the same amount. */
+const PRECIO_DISCOUNT_TOLERANCE = 0.02;
+
+/**
+ * @param {string | null | undefined} discountType
+ * @returns {number | null} Percentage 0–100, e.g. 10 from "10%".
+ */
+function parseDiscountPercentFromType(discountType) {
+  if (discountType == null || !String(discountType).trim()) return null;
+  const m = String(discountType).replace(',', '.').match(/(\d+(?:\.\d+)?)\s*%/);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  return Number.isFinite(n) && n > 0 && n < 100 ? n : null;
+}
+
+/**
+ * Template B: Precio shows the post-discount amount while discount_type states a %.
+ * Back-calculate catalogue base as price_after / (1 − pct/100).
+ * @param {number | null} baseFromPrecio
+ * @param {number | null} priceAfterDiscount
+ * @param {string | null | undefined} discountType
+ * @returns {{ base: number | null, adjusted: boolean }}
+ */
+function reconcileBaseRentWhenPrecioIncludesDiscount(baseFromPrecio, priceAfterDiscount, discountType) {
+  if (baseFromPrecio == null || priceAfterDiscount == null) {
+    return { base: baseFromPrecio, adjusted: false };
+  }
+
+  const pct = parseDiscountPercentFromType(discountType);
+  if (pct == null) return { base: baseFromPrecio, adjusted: false };
+
+  const diff = baseFromPrecio - priceAfterDiscount;
+  const precioEqualsAfterDiscount = Math.abs(diff) <= PRECIO_DISCOUNT_TOLERANCE;
+  if (!precioEqualsAfterDiscount) return { base: baseFromPrecio, adjusted: false };
+
+  const factor = 1 - pct / 100;
+  if (factor <= 0) return { base: baseFromPrecio, adjusted: false };
+
+  const inferredBase = priceAfterDiscount / factor;
+  if (!Number.isFinite(inferredBase) || inferredBase <= priceAfterDiscount) {
+    return { base: baseFromPrecio, adjusted: false };
+  }
+
+  const base = Math.round(inferredBase * 100) / 100;
+  return { base, adjusted: true };
+}
+
 /**
  * Extra CSV columns only: suplemento segunda persona + líneas Pensión (meal plan).
  * @param {string | null | undefined} serviceName
@@ -539,7 +586,7 @@ Localiza secciones por títulos ("Duración de la estancia", ANEXO 1, SECCIÓN E
 
 7) base_rent_from_precio: Importe principal bajo "Precio:" (solo número con punto decimal, ej. "1015.00"). Si aparece "Considerando 100 euros de suplemento por segunda persona." y el precio mostrado incluye esos 100 €, RESTA 100 del importe mostrado y pon el resultado en base_rent_from_precio (ej. 1115 → 1015). second_person_supplement_euros = "100" y second_person_supplement_label = "suplemento por segunda persona" en ese caso; si no hay esa frase, null en esos campos.
 
-8) Descuento: Si existe "Descuento Aplicado en el Precio:", discount_type = porcentaje o tipo (ej. "10%"). price_after_discount_euros = el importe mensual en euros que aparece tras la frase "por lo que el importe a abonar mensualmente será de" (puede haber salto de línea; solo el número, ej. "837.00"). El sistema calculará el descuento en € como precio base menos ese importe. Si no hay descuento o no consta esa cifra, null.
+8) Descuento: Si existe "Descuento Aplicado en el Precio:", discount_type = porcentaje o tipo (ej. "10%"). price_after_discount_euros = el importe mensual en euros que aparece tras la frase "por lo que el importe a abonar mensualmente será de" (puede haber salto de línea; solo el número, ej. "837.00"). base_rent_from_precio debe ser el precio de catálogo ANTES del descuento cuando el PDF muestre ambos importes; si "Precio:" ya muestra el importe con descuento aplicado (igual que el importe "será de"), extrae ese número tal cual — el sistema puede reconstruir la base de catálogo a partir del porcentaje. Si no hay descuento o no consta esa cifra, null.
 
 9) additional_services: SOLO líneas relacionadas con "Pensión:" (meal plan / opciones de pensión). NO incluir el suplemento por segunda persona aquí. Array vacío si no hay Pensión.
 
@@ -599,9 +646,23 @@ Devuelve JSON estricto según el esquema. Usa null o "unknown" cuando falte info
   }
 
   const baseRentRaw = parsed.base_rent_from_precio ?? 'unknown';
-  const base = parseMoneyAmount(baseRentRaw);
+  let base = parseMoneyAmount(baseRentRaw);
   const secondPerson = parseMoneyAmount(parsed.second_person_supplement_euros);
   const priceAfterDiscount = parseMoneyAmount(parsed.price_after_discount_euros);
+  const discountType =
+    parsed.discount_type != null && String(parsed.discount_type).trim()
+      ? String(parsed.discount_type).trim()
+      : '';
+
+  const { base: reconciledBase } = reconcileBaseRentWhenPrecioIncludesDiscount(
+    base,
+    priceAfterDiscount,
+    discountType,
+  );
+  base = reconciledBase;
+
+  const effectiveBaseRentRaw = base != null ? base.toFixed(2) : baseRentRaw;
+
   const { extra_name, extra_price, pensionAmounts } = buildExtrasForCsvAndTotals(parsed);
 
   const finalRent = computeFinalRentPrice(base, priceAfterDiscount, secondPerson, pensionAmounts);
@@ -618,7 +679,7 @@ Devuelve JSON estricto según el esquema. Usa null o "unknown" cuando falte info
         : '';
 
   const baseRentForDeposit =
-    base != null ? baseRentRaw : (parsed.rent_section_f_pages_17_18 ?? 'unknown');
+    base != null ? effectiveBaseRentRaw : (parsed.rent_section_f_pages_17_18 ?? 'unknown');
 
   const depositRaw = parsed.deposit_section_h_pages_18_19 ?? 'unknown';
   const rule = parsed.fianza_rule_from_wording ?? 'unknown';
@@ -626,11 +687,6 @@ Devuelve JSON estricto según el esquema. Usa null o "unknown" cuando falte info
     (parsed.deposit_wording_snippet && String(parsed.deposit_wording_snippet).trim()) || '';
 
   const { deposit, source: depositSource } = resolveDeposit(depositRaw, rule, baseRentForDeposit, wording);
-
-  const discountType =
-    parsed.discount_type != null && String(parsed.discount_type).trim()
-      ? String(parsed.discount_type).trim()
-      : '';
 
   return {
     nc: ncHint,
@@ -642,7 +698,7 @@ Devuelve JSON estricto según el esquema. Usa null o "unknown" cuando falte info
     unit_type: unitType,
     check_in_date: checkIn,
     check_out_date: checkOut,
-    base_rent: baseRentRaw,
+    base_rent: effectiveBaseRentRaw,
     extra_name,
     extra_price,
     discount_type: discountType,

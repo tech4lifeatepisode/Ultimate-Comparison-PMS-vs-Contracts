@@ -1,0 +1,22 @@
+# Secrets and local env
+.env
+**/.env
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs and local run artifacts
+*.log
+upload_checkpoint.json
+analysis_report.json
+
+# Local extraction outputs (timestamped CSVs)
+**/extracted information saved csv/
+
+# Sandbox test contracts (local PDFs/DOCX)
+**/contract extraction sandbox/contracts/
