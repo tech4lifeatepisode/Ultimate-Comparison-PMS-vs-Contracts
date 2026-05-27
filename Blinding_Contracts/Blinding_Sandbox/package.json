@@ -1,0 +1,17 @@
+{
+  "name": "contract-blinding-sandbox",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "blind": "node blind-contracts.mjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "mupdf": "^1.27.0",
+    "openai": "^4.85.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38"
+  }
+}
