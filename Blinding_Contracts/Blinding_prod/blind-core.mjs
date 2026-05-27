@@ -275,6 +275,10 @@ function isUnderscoreLine(text) {
   return /^_{5,}$/.test(stripped) || (stripped.length >= 5 && /^[_\-=~.]+$/.test(stripped));
 }
 
+function hasUnderscorePortion(text) {
+  return /_{5,}/.test(text);
+}
+
 function isTenantNameLine(text) {
   const t = text.trim();
   return (
@@ -283,7 +287,49 @@ function isTenantNameLine(text) {
   );
 }
 
+const TENANT_NAME_PATTERN = /(D\.|Dña\.|Sr\.|Sra\.)\s*[\p{L}0-9 .,'ºª-]+/giu;
+
+function isExcludedTenantName(name) {
+  return /Enrique Oliete/i.test(name);
+}
+
+/**
+ * @param {TextLine} line
+ * @param {number} pageNum
+ * @param {number} pageWidth
+ */
+function findTenantNameBoxesInLine(line, pageNum, pageWidth) {
+  /** @type {RedactionBox[]} */
+  const boxes = [];
+  const text = line.text;
+  for (const match of text.matchAll(TENANT_NAME_PATTERN)) {
+    const name = match[0].trim();
+    if (!name || isExcludedTenantName(name)) continue;
+    const start = match.index + match[0].indexOf(name);
+    const box = boxFromCharRange(line, start, pageNum, pageWidth, start + name.length);
+    if (box) boxes.push(box);
+  }
+  return boxes;
+}
+
 const SIGNATURE_SECTION_LABELS = ['El Cliente', 'El Avalista'];
+
+function lineMatchesSignatureLabel(text, label) {
+  const trimmed = text.trim();
+  if (trimmed === label) return true;
+  if (text.includes(label)) return true;
+  return new RegExp(`(?:^|\\s)${label.replace(/\s+/g, '\\s+')}(?:\\s|$)`).test(text);
+}
+
+function pageHasSignatureBlock(lines) {
+  return lines.some(
+    (l) =>
+      l.text.includes('Y, en prueba de conformidad') ||
+      l.text.includes('La Empresa') ||
+      lineMatchesSignatureLabel(l.text, 'El Cliente') ||
+      lineMatchesSignatureLabel(l.text, 'El Avalista'),
+  );
+}
 
 function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
   /** @type {RedactionBox[]} */
@@ -291,7 +337,7 @@ function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
 
   for (const label of SIGNATURE_SECTION_LABELS) {
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].text.trim() !== label) continue;
+      if (!lineMatchesSignatureLabel(lines[i].text, label)) continue;
 
       /** @type {RedactionBox[]} */
       const sectionBoxes = [];
@@ -302,9 +348,9 @@ function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
         if (!nextText) continue;
         if (/^\d+$/.test(nextText)) break;
         if (nextText.includes('Docusign Envelope')) continue;
-        if (SIGNATURE_SECTION_LABELS.includes(nextText)) break;
+        if (SIGNATURE_SECTION_LABELS.some((l) => lineMatchesSignatureLabel(nextText, l))) break;
 
-        if (isUnderscoreLine(nextText) || isTenantNameLine(nextText)) {
+        if (isUnderscoreLine(nextText)) {
           const box = itemsToBox(next.items);
           sectionBoxes.push({
             page: pageNum,
@@ -313,7 +359,30 @@ function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
             width: Math.max(box.width + BOX_PAD_X * 2, contentWidth(pageWidth) * 0.55),
             height: box.height + BOX_PAD_Y * 2,
           });
-        } else if (sectionBoxes.length > 0) {
+        } else if (hasUnderscorePortion(nextText)) {
+          const idx = nextText.search(/_{5,}/);
+          const box = boxFromCharRange(next, idx, pageNum, pageWidth);
+          if (box) sectionBoxes.push(box);
+        } else {
+          const tenantBoxes = findTenantNameBoxesInLine(next, pageNum, pageWidth);
+          if (tenantBoxes.length > 0) {
+            sectionBoxes.push(...tenantBoxes);
+            break;
+          }
+          if (isTenantNameLine(nextText)) {
+            const box = itemsToBox(next.items);
+            sectionBoxes.push({
+              page: pageNum,
+              x: box.x - BOX_PAD_X,
+              y: box.y - BOX_PAD_Y,
+              width: Math.max(box.width + BOX_PAD_X * 2, contentWidth(pageWidth) * 0.55),
+              height: box.height + BOX_PAD_Y * 2,
+            });
+            break;
+          }
+        }
+
+        if (sectionBoxes.length > 0 && (isTenantNameLine(nextText) || findTenantNameBoxesInLine(next, pageNum, pageWidth).length > 0)) {
           break;
         }
       }
@@ -322,6 +391,71 @@ function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
     }
   }
 
+  return boxes;
+}
+
+function countExtractedChars(pages) {
+  let total = 0;
+  for (const pageData of pages.values()) {
+    for (const line of pageData.lines) total += line.text.length;
+  }
+  return total;
+}
+
+/**
+ * Normalized fallback boxes for image-only PDFs (derived from digital NC_0001 template).
+ * Signature page uses offset from end: pageCount - 15 (page 16 on 31-page contracts).
+ */
+const SCANNED_PARTY_BOX = { page: 1, xR: 0.1327, yR: 0.3676, wR: 0.7346, hR: 0.0514 };
+const SCANNED_SIGNATURE_BOXES = [
+  { xR: 0.351, yR: 0.5561, wR: 0.3929, hR: 0.0326 },
+  { xR: 0.4028, yR: 0.5749, wR: 0.3929, hR: 0.0326 },
+];
+const SCANNED_SIGNATURE_PAGE_OFFSET = 15;
+
+/** @type {Record<number, { page: number, xR: number, yR: number, wR: number, hR: number }[]>} */
+const SCANNED_TEMPLATE_OVERRIDES = {
+  2: [
+    { page: 2, xR: 0.1327, yR: 0.72, wR: 0.7346, hR: 0.0285 },
+    { page: 2, xR: 0.1327, yR: 0.76, wR: 0.7346, hR: 0.0285 },
+  ],
+  4: [
+    { page: 1, xR: 0.1327, yR: 0.22, wR: 0.7346, hR: 0.04 },
+    { page: 4, xR: 0.351, yR: 0.62, wR: 0.3929, hR: 0.0326 },
+    { page: 4, xR: 0.4028, yR: 0.68, wR: 0.3929, hR: 0.0326 },
+  ],
+};
+
+function buildScannedTemplateSpecs(pageCount) {
+  if (SCANNED_TEMPLATE_OVERRIDES[pageCount]) {
+    return [SCANNED_PARTY_BOX, ...SCANNED_TEMPLATE_OVERRIDES[pageCount]];
+  }
+
+  const sigPage = Math.max(2, pageCount - SCANNED_SIGNATURE_PAGE_OFFSET);
+  return [
+    SCANNED_PARTY_BOX,
+    ...SCANNED_SIGNATURE_BOXES.map((box) => ({ page: sigPage, ...box })),
+  ];
+}
+
+function applyScannedTemplateFallback(pages) {
+  const pageCount = pages.size;
+  const template = buildScannedTemplateSpecs(pageCount);
+  if (!template.length) return [];
+
+  /** @type {RedactionBox[]} */
+  const boxes = [];
+  for (const spec of template) {
+    const pageData = pages.get(spec.page);
+    if (!pageData) continue;
+    boxes.push({
+      page: spec.page,
+      x: spec.xR * pageData.pageWidth,
+      y: spec.yR * pageData.pageHeight,
+      width: spec.wR * pageData.pageWidth,
+      height: spec.hR * pageData.pageHeight,
+    });
+  }
   return boxes;
 }
 
@@ -335,14 +469,16 @@ function findAllRedactionBoxes(pages) {
   }
 
   for (const [pageNum, pageData] of pages) {
-    const hasSignatureBlock = pageData.lines.some(
-      (l) =>
-        l.text.includes('Y, en prueba de conformidad') ||
-        l.text.includes('La Empresa') ||
-        l.text.trim() === 'El Avalista',
-    );
-    if (!hasSignatureBlock) continue;
+    if (!pageHasSignatureBlock(pageData.lines)) continue;
     boxes.push(...findSignatureSectionBoxes(pageNum, pageData.lines, pageData.pageWidth));
+  }
+
+  if (boxes.length === 0 && countExtractedChars(pages) < 50) {
+    const fallback = applyScannedTemplateFallback(pages);
+    if (fallback.length > 0) {
+      console.log(`  Using scanned-PDF template fallback (${pages.size} pages, ${fallback.length} region(s)).`);
+      return fallback;
+    }
   }
 
   return boxes;
@@ -380,7 +516,7 @@ async function renderPageWithRedactions(pdfBuffer, pageNum, boxes) {
 }
 
 async function applyRedactions(pdfBuffer, boxes) {
-  const srcDoc = await PDFDocument.load(pdfBuffer);
+  const srcDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
   const outDoc = await PDFDocument.create();
   const pageCount = srcDoc.getPageCount();
 
@@ -410,6 +546,15 @@ async function applyRedactions(pdfBuffer, boxes) {
   }
 
   return Buffer.from(await outDoc.save());
+}
+
+/**
+ * Detect redaction boxes without applying them (for tests / template calibration).
+ * @param {Buffer} fileBuffer
+ */
+export async function detectRedactionBoxes(fileBuffer) {
+  const pages = await extractPages(fileBuffer);
+  return { pages, boxes: findAllRedactionBoxes(pages) };
 }
 
 /**
