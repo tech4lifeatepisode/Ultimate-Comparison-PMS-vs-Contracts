@@ -7,11 +7,13 @@ import OpenAI from 'openai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { runExtractionPipeline } from './extract-contracts.mjs';
-import { CONTRACT_FILE_EXTENSIONS } from './contract-file-types.mjs';
+import { CONTRACT_FILE_EXTENSIONS, isContractFileName } from './contract-file-types.mjs';
 import {
   getExtractionTableName,
   parseNcFilterSet,
   pathMatchesNcFilter,
+  extractNcFromStoragePath,
+  normalizeNcNumber,
 } from './extraction-config.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,13 +35,6 @@ export function isEnvTruthy(name) {
   const s = String(v).trim();
   if (s === '') return false;
   return /^(1|true|yes|on)$/i.test(s);
-}
-
-/**
- * @param {string} name
- */
-function isContractFileName(name) {
-  return SUPPORTED_EXT.has(path.extname(name).toLowerCase());
 }
 
 /**
@@ -179,6 +174,52 @@ async function fetchAlreadyExtractedStoragePaths(supabase, tableName) {
     from += page;
   }
   return set;
+}
+
+/** @returns {Promise<Set<string>>} normalized NC numbers already present in the table */
+export async function fetchExtractedNcSet(supabase, tableName) {
+  const set = new Set();
+  const page = 1000;
+  let from = 0;
+  for (;;) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('nc, file_name')
+      .order('id', { ascending: true })
+      .range(from, from + page - 1);
+    if (error) throw new Error(`Supabase read nc: ${error.message}`);
+    if (!data?.length) break;
+    for (const row of data) {
+      const nc =
+        normalizeNcNumber(row.nc || '') || extractNcFromStoragePath(row.file_name || '');
+      if (nc) set.add(nc);
+    }
+    if (data.length < page) break;
+    from += page;
+  }
+  return set;
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} bucket
+ * @param {string[]} folders
+ * @param {Set<string>} ncFilter
+ * @returns {Promise<Map<string, string[]>>}
+ */
+export async function mapNcPathsInFolders(supabase, bucket, folders, ncFilter) {
+  const byNc = new Map();
+  for (const folder of folders) {
+    const paths = await collectContractObjectPaths(supabase, bucket, folder);
+    for (const p of paths) {
+      const nc = extractNcFromStoragePath(p);
+      if (nc && ncFilter.has(nc)) {
+        if (!byNc.has(nc)) byNc.set(nc, []);
+        byNc.get(nc).push(p);
+      }
+    }
+  }
+  return byNc;
 }
 
 export async function runExtractFromSupabaseStorage() {

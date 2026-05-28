@@ -7,6 +7,7 @@ import { syncExtractionsToSupabase } from './supabase-output.mjs';
 import {
   CONTRACT_FILE_EXTENSIONS,
   DOCX_MIME_TYPE,
+  isContractFileName,
   mimeFromContractFileName,
 } from './contract-file-types.mjs';
 
@@ -905,7 +906,7 @@ async function main() {
 
   const dirEntries = await fs.readdir(CONTRACTS_DIR, { withFileTypes: true });
   const files = dirEntries
-    .filter((e) => e.isFile() && SUPPORTED_EXT.has(path.extname(e.name).toLowerCase()))
+    .filter((e) => e.isFile() && isContractFileName(e.name))
     .map((e) => e.name);
 
   if (files.length === 0) {

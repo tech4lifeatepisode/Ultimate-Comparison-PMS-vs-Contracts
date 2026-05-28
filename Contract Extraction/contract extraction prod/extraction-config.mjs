@@ -64,3 +64,57 @@ export const DEFAULT_OCR_RERUN_NCS =
 
 /** Storage folders to scan for the OCR rerun batch. */
 export const DEFAULT_OCR_RERUN_FOLDERS = ['To Fill 1', 'To Fill 2', 'Fill 3 NC_1250-NC_1470'];
+
+/** Fallback folders when an NC is not in source folders (e.g. NC_3 only in Fill 1 Blinded). */
+export const DEFAULT_OCR_RERUN_FALLBACK_FOLDERS = [
+  'Fill 1 Blinded',
+  'Fill 2 Blinded',
+  'Fill 3 NC_1250-NC_1470 Blinded',
+  'Blinded Missing',
+];
+
+/**
+ * @param {string | undefined} raw
+ * @param {string[]} defaultList
+ */
+export function foldersListFromEnv(raw, defaultList) {
+  const text = raw?.trim();
+  if (!text) return defaultList;
+  return text
+    .split(/[\n,;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * @param {Set<string>} ncFilter
+ * @param {Map<string, string[]>} pathsByNc
+ * @returns {string[]}
+ */
+export function missingNcsFromMap(ncFilter, pathsByNc) {
+  return [...ncFilter].filter((nc) => !pathsByNc.has(nc)).sort((a, b) => Number(a) - Number(b));
+}
+
+/**
+ * @param {Set<string>} ncFilter
+ * @param {Map<string, string[]>} pathsByNc
+ */
+export function logNcCoverage(label, ncFilter, pathsByNc) {
+  const missing = missingNcsFromMap(ncFilter, pathsByNc);
+  const found = [...pathsByNc.keys()].sort((a, b) => Number(a) - Number(b));
+  console.log(`\n--- ${label} ---`);
+  console.log(`  Found ${found.length}/${ncFilter.size} NC(s): ${found.join(', ') || '(none)'}`);
+  if (missing.length > 0) {
+    console.log(`  Missing ${missing.length} NC(s): ${missing.join(', ')}`);
+    for (const nc of missing) {
+      console.log(`    NC_${nc}: no file in scanned folders`);
+    }
+  }
+  for (const [nc, paths] of [...pathsByNc.entries()].sort((a, b) => Number(a[0]) - Number(b[0]))) {
+    if (paths.length > 1) {
+      console.log(`  NC_${nc}: ${paths.length} paths (will extract first pending):`);
+      paths.forEach((p) => console.log(`    - ${p}`));
+    }
+  }
+  return missing;
+}
