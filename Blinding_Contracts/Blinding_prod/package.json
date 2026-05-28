@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "blind": "node blind-from-storage.mjs",
-    "blind:all": "node blind-from-storage-batch.mjs"
+    "blind:all": "node blind-from-storage-batch.mjs",
+    "blind:office": "node blind-from-storage-office.mjs",
+    "blind:office:all": "node blind-from-storage-office-batch.mjs"
   },
   "dependencies": {
+    "@matbee/libreoffice-converter": "^2.6.0",
     "@napi-rs/canvas": "^1.0.0",
     "@supabase/supabase-js": "^2.49.1",
     "dotenv": "^16.4.7",

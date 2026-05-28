@@ -4,3 +4,4 @@ Contracts/
 Blind Contracts/
 *.log
 blind-run*.log
+blind-office*.log

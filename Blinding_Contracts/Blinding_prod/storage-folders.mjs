@@ -2,6 +2,7 @@
  * Source → destination folder pairs inside SUPABASE_STORAGE_BUCKET (e.g. Contracts).
  * Override with BLINDING_FOLDER_PAIRS_JSON env var if needed.
  */
+import path from 'path';
 
 export const DEFAULT_BLINDING_FOLDER_PAIRS = [
   { source: 'To Fill 1', destination: 'Fill 1 Blinded' },
@@ -48,4 +49,35 @@ export function outputPathForSource(sourceObjectPath, sourceFolder, destFolder) 
   const base = sourceObjectPath.slice(sourceFolder.length).replace(/^\/+/, '');
   const fileName = base.includes('/') ? base.split('/').pop() : base;
   return `${destFolder}/${fileName}`;
+}
+
+/**
+ * Blinded output path for office sources: same basename with .pdf extension.
+ * @param {string} sourceObjectPath
+ * @param {string} sourceFolder
+ * @param {string} destFolder
+ */
+export function outputPdfPathForOfficeSource(sourceObjectPath, sourceFolder, destFolder) {
+  const base = outputPathForSource(sourceObjectPath, sourceFolder, destFolder);
+  const ext = path.extname(base);
+  if (!ext) return `${base}.pdf`;
+  return base.slice(0, -ext.length) + '.pdf';
+}
+
+/**
+ * Possible blinded output paths for a source file (for skip-if-exists checks).
+ * @param {string} sourceObjectPath
+ * @param {string} sourceFolder
+ * @param {string} destFolder
+ */
+export function possibleBlindedOutputPaths(sourceObjectPath, sourceFolder, destFolder) {
+  const sameName = outputPathForSource(sourceObjectPath, sourceFolder, destFolder);
+  const ext = path.extname(sameName).toLowerCase();
+  /** @type {string[]} */
+  const paths = [sameName];
+  if (ext && ext !== '.pdf') {
+    paths.push(sameName.slice(0, -ext.length) + '.pdf');
+    paths.push(`${sameName}.pdf`);
+  }
+  return [...new Set(paths)];
 }

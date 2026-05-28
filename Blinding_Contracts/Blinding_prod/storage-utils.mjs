@@ -2,11 +2,64 @@ import path from 'path';
 
 const PDF_EXT = new Set(['.pdf']);
 
+/** Word / OpenDocument formats converted to PDF before blinding. */
+export const OFFICE_EXTENSIONS = new Set(['.doc', '.docx', '.docm', '.rtf', '.odt']);
+
 /**
  * @param {string} name
  */
 export function isPdfFileName(name) {
   return PDF_EXT.has(path.extname(name).toLowerCase());
+}
+
+/**
+ * @param {string} name
+ */
+export function isOfficeFileName(name) {
+  return OFFICE_EXTENSIONS.has(path.extname(name).toLowerCase());
+}
+
+/**
+ * @param {string} name
+ */
+export function isBlindableNonPdfFileName(name) {
+  return isOfficeFileName(name);
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} bucket
+ * @param {string} prefix
+ * @param {Set<string>} extensions
+ */
+async function collectObjectPathsByExtension(supabase, bucket, prefix, extensions) {
+  const data = await listAllStorageItems(supabase, bucket, prefix);
+  const out = [];
+
+  for (const item of data || []) {
+    const rel = prefix ? `${prefix}/${item.name}` : item.name;
+    const ext = path.extname(item.name).toLowerCase();
+
+    if (extensions.has(ext)) {
+      out.push(rel);
+      continue;
+    }
+
+    const meta = item.metadata;
+    const fileSize =
+      meta && typeof meta.size === 'number' ? meta.size : meta && meta.size != null ? Number(meta.size) : null;
+    if (fileSize != null && !Number.isNaN(fileSize)) continue;
+
+    const childPrefix = prefix ? `${prefix}/${item.name}` : item.name;
+    try {
+      const nested = await collectObjectPathsByExtension(supabase, bucket, childPrefix, extensions);
+      out.push(...nested);
+    } catch (e) {
+      console.warn(`Skipping storage path "${rel}":`, e instanceof Error ? e.message : e);
+    }
+  }
+
+  return out;
 }
 
 /** @param {string} name */
@@ -56,26 +109,42 @@ async function listAllStorageItems(supabase, bucket, prefix) {
  * @param {string} prefix
  */
 export async function collectPdfObjectPaths(supabase, bucket, prefix) {
+  return collectObjectPathsByExtension(supabase, bucket, prefix, PDF_EXT);
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} bucket
+ * @param {string} prefix
+ */
+export async function collectOfficeObjectPaths(supabase, bucket, prefix) {
+  return collectObjectPathsByExtension(supabase, bucket, prefix, OFFICE_EXTENSIONS);
+}
+
+/**
+ * List all object paths under a storage prefix (files only, flat names).
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} bucket
+ * @param {string} prefix
+ */
+export async function collectAllFilePaths(supabase, bucket, prefix) {
   const data = await listAllStorageItems(supabase, bucket, prefix);
   const out = [];
 
   for (const item of data || []) {
     const rel = prefix ? `${prefix}/${item.name}` : item.name;
+    const meta = item.metadata;
+    const fileSize =
+      meta && typeof meta.size === 'number' ? meta.size : meta && meta.size != null ? Number(meta.size) : null;
 
-    if (isPdfFileName(item.name)) {
+    if (fileSize != null && !Number.isNaN(fileSize)) {
       out.push(rel);
       continue;
     }
 
-    const meta = item.metadata;
-    const fileSize =
-      meta && typeof meta.size === 'number' ? meta.size : meta && meta.size != null ? Number(meta.size) : null;
-    if (fileSize != null && !Number.isNaN(fileSize)) continue;
-
     const childPrefix = prefix ? `${prefix}/${item.name}` : item.name;
     try {
-      const nested = await collectPdfObjectPaths(supabase, bucket, childPrefix);
-      out.push(...nested);
+      out.push(...(await collectAllFilePaths(supabase, bucket, childPrefix)));
     } catch (e) {
       console.warn(`Skipping storage path "${rel}":`, e instanceof Error ? e.message : e);
     }
@@ -112,8 +181,19 @@ export async function downloadObject(supabase, bucket, objectPath) {
  * @param {Buffer} body
  */
 export async function uploadPdfObject(supabase, bucket, objectPath, body) {
+  return uploadObject(supabase, bucket, objectPath, body, 'application/pdf');
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} bucket
+ * @param {string} objectPath
+ * @param {Buffer} body
+ * @param {string} contentType
+ */
+export async function uploadObject(supabase, bucket, objectPath, body, contentType) {
   const { error } = await supabase.storage.from(bucket).upload(objectPath, body, {
-    contentType: 'application/pdf',
+    contentType,
     upsert: true,
   });
   if (error) throw new Error(`Upload "${objectPath}": ${error.message}`);
