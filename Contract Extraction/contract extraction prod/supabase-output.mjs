@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs/promises';
 import path from 'path';
+import { getExtractionTableName } from './extraction-config.mjs';
 
 /**
  * @param {object} row
@@ -39,17 +40,17 @@ function rowToRecord(row) {
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
  * @param {object[]} records
  */
-async function insertContractRows(supabase, records) {
+async function insertContractRows(supabase, records, tableName) {
   if (records.length === 0) return;
   const { data, error } = await supabase
-    .from('contract_extractions')
+    .from(tableName)
     .insert(records)
     .select('id, nc, contract_title, base_rent, final_rent, rent, file_name');
 
   if (error) {
     const hint =
       /column|does not exist|schema/i.test(error.message || '')
-        ? ' Run supabase-schema.sql (or supabase-migration-csv-v2-headers.sql) in Supabase SQL Editor so all v2 columns exist.'
+        ? ` Run supabase-schema.sql (or supabase-schema-ocr-rerun.sql for reruns) in Supabase SQL Editor so all v2 columns exist on "${tableName}".`
         : '';
     throw new Error(`Supabase insert: ${error.message}${error.details ? ` — ${error.details}` : ''}${hint}`);
   }
@@ -104,9 +105,10 @@ export async function syncExtractionsToSupabase({ csvPath, dataRows }) {
   const bucket = process.env.SUPABASE_STORAGE_BUCKET;
   const folder = process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 2';
 
+  const tableName = getExtractionTableName();
   const records = dataRows.map(rowToRecord);
-  await insertContractRows(supabase, records);
-  console.log(`Supabase: inserted ${records.length} row(s) into contract_extractions.`);
+  await insertContractRows(supabase, records, tableName);
+  console.log(`Supabase: inserted ${records.length} row(s) into ${tableName}.`);
 
   if (bucket) {
     const objectPath = await uploadCsvToStorage(supabase, csvPath, bucket, folder);

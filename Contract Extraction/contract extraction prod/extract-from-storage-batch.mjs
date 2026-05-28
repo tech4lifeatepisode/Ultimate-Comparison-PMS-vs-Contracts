@@ -6,6 +6,7 @@ import 'dotenv/config';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { runExtractFromSupabaseStorage } from './extract-from-storage.mjs';
+import { getExtractionTableName } from './extraction-config.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -20,10 +21,13 @@ if (process.env.SKIP_ALREADY_EXTRACTED !== 'false') {
 export async function runExtractFromSupabaseStorageUntilDone() {
   const folder = (process.env.SUPABASE_STORAGE_FOLDER || 'To Fill 2').replace(/\\/g, '/');
   const max = process.env.MAX_EXTRACTION_FILES || '(unlimited)';
+  const tableName = getExtractionTableName();
+  const ncFilter = process.env.EXTRACTION_NC_FILTER?.trim();
   console.log(
     '\n=== Full batch run: starting at batch 1 (first files in sorted order) ===\n' +
-      `Folder: "${folder}" · up to ${max} file(s) per round · SKIP_ALREADY_EXTRACTED=${process.env.SKIP_ALREADY_EXTRACTED}\n` +
-      'If contract_extractions is empty, nothing is skipped and processing begins from the first path.\n',
+      `Folder: "${folder}" · table: ${tableName} · up to ${max} file(s) per round · SKIP_ALREADY_EXTRACTED=${process.env.SKIP_ALREADY_EXTRACTED}\n` +
+      (ncFilter ? `NC filter: ${ncFilter}\n` : '') +
+      `If ${tableName} is empty, nothing is skipped and processing begins from the first path.\n`,
   );
 
   let total = 0;

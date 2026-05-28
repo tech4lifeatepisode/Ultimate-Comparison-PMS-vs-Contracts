@@ -8,6 +8,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { runExtractionPipeline } from './extract-contracts.mjs';
 import { CONTRACT_FILE_EXTENSIONS } from './contract-file-types.mjs';
+import {
+  getExtractionTableName,
+  parseNcFilterSet,
+  pathMatchesNcFilter,
+} from './extraction-config.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -150,16 +155,17 @@ async function entriesFromPublicUrls(urlText) {
 }
 
 /**
- * Paths already stored in contract_extractions.file_name (full storage path, e.g. To Fill 2/x.pdf).
+ * Paths already stored in the extraction table file_name (full storage path, e.g. To Fill 2/x.pdf).
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} tableName
  */
-async function fetchAlreadyExtractedStoragePaths(supabase) {
+async function fetchAlreadyExtractedStoragePaths(supabase, tableName) {
   const set = new Set();
   const page = 1000;
   let from = 0;
   for (;;) {
     const { data, error } = await supabase
-      .from('contract_extractions')
+      .from(tableName)
       .select('file_name')
       .not('file_name', 'is', null)
       .order('id', { ascending: true })
@@ -195,17 +201,29 @@ export async function runExtractFromSupabaseStorage() {
   }
 
   const supabase = createClient(url, key);
-  console.log(`Listing contracts in bucket "${bucket}" under "${folder || '(root)'}"...`);
+  const tableName = getExtractionTableName();
+  const ncFilter = parseNcFilterSet(process.env.EXTRACTION_NC_FILTER);
+  console.log(
+    `Listing contracts in bucket "${bucket}" under "${folder || '(root)'}" (table: ${tableName})...`,
+  );
 
   const paths = await collectContractObjectPaths(supabase, bucket, folder);
   let sorted = [...new Set(paths)].sort();
 
+  if (ncFilter) {
+    const n = sorted.length;
+    sorted = sorted.filter((p) => pathMatchesNcFilter(p, ncFilter));
+    console.log(
+      `EXTRACTION_NC_FILTER: ${n - sorted.length} path(s) skipped (not in NC list), ${sorted.length} matched.`,
+    );
+  }
+
   if (isEnvTruthy('SKIP_ALREADY_EXTRACTED')) {
-    const done = await fetchAlreadyExtractedStoragePaths(supabase);
+    const done = await fetchAlreadyExtractedStoragePaths(supabase, tableName);
     const n = sorted.length;
     sorted = sorted.filter((p) => !done.has(p));
     console.log(
-      `SKIP_ALREADY_EXTRACTED: ${n - sorted.length} already in contract_extractions, ${sorted.length} not yet extracted.`,
+      `SKIP_ALREADY_EXTRACTED: ${n - sorted.length} already in ${tableName}, ${sorted.length} not yet extracted.`,
     );
   }
 
@@ -235,7 +253,7 @@ export async function runExtractFromSupabaseStorage() {
       }
     }
   } else if (paths.length > 0) {
-    console.log('No files left to extract in this folder (all listed objects already in contract_extractions).');
+    console.log(`No files left to extract in this folder (all listed objects already in ${tableName}).`);
     return { processed: 0, allAlreadyExtracted: true, pendingBeforeSlice: 0 };
   } else {
     const publicUrls = process.env.CONTRACT_PUBLIC_URLS || '';

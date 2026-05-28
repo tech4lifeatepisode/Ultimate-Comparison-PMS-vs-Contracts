@@ -5,6 +5,7 @@
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { collectContractObjectPaths } from './extract-from-storage.mjs';
+import { getExtractionTableName, parseNcFilterSet, pathMatchesNcFilter } from './extraction-config.mjs';
 
 function getSupabaseKey() {
   return (
@@ -15,13 +16,13 @@ function getSupabaseKey() {
 }
 
 /** @returns {Promise<Map<string, number>>} file_name -> row count */
-async function fetchFileNameCounts(supabase) {
+async function fetchFileNameCounts(supabase, tableName) {
   const counts = new Map();
   const page = 1000;
   let from = 0;
   for (;;) {
     const { data, error } = await supabase
-      .from('contract_extractions')
+      .from(tableName)
       .select('file_name')
       .not('file_name', 'is', null)
       .order('id', { ascending: true })
@@ -57,14 +58,19 @@ async function main() {
   }
 
   const supabase = createClient(url, key);
+  const tableName = getExtractionTableName();
+  const ncFilter = parseNcFilterSet(process.env.EXTRACTION_NC_FILTER);
 
   console.log(`Listing contract files in bucket "${bucket}" under "${folder}"...`);
-  const paths = await collectContractObjectPaths(supabase, bucket, folder);
+  let paths = await collectContractObjectPaths(supabase, bucket, folder);
+  if (ncFilter) {
+    paths = paths.filter((p) => pathMatchesNcFilter(p, ncFilter));
+  }
   const storageSet = new Set(paths);
   const storageCount = paths.length;
 
-  console.log(`Fetching contract_extractions file_name counts...`);
-  const fileNameCounts = await fetchFileNameCounts(supabase);
+  console.log(`Fetching ${tableName} file_name counts...`);
+  const fileNameCounts = await fetchFileNameCounts(supabase, tableName);
 
   let totalRows = 0;
   let uniqueFileNamesInDb = 0;
