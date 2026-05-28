@@ -44,7 +44,7 @@ export function parseNcFilterSet(raw) {
  */
 export function extractNcFromStoragePath(objectPath) {
   const base = path.basename(objectPath, path.extname(objectPath)).replace(/\.docx$/i, '');
-  const m = base.match(/^NC[_\s-]*(\d+)/i);
+  const m = base.match(/NC[_\s-]*(\d+)/i);
   return m ? normalizeNcNumber(m[1]) : null;
 }
 

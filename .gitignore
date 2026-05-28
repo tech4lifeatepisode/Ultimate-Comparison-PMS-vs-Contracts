@@ -19,6 +19,11 @@ __pycache__/
 upload_checkpoint.json
 analysis_report.json
 
+# Local manual extraction/blinding (personal contract PDFs — do not commit)
+Local Extraction and Blinding/*.pdf
+Local Extraction and Blinding/Locally Blinded/
+Local Extraction and Blinding/**/*.pdf
+
 # Local extraction outputs (timestamped CSVs)
 **/extracted information saved csv/
 

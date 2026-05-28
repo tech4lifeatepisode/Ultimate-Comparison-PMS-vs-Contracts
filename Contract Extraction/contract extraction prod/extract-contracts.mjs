@@ -26,7 +26,7 @@ const SUPPORTED_EXT = CONTRACT_FILE_EXTENSIONS;
  */
 function extractNcFromFileName(fileName) {
   const base = path.basename(fileName, path.extname(fileName)).replace(/\.docx$/i, '');
-  const m = base.match(/^NC[_\s-]*(\d+)/i);
+  const m = base.match(/NC[_\s-]*(\d+)/i);
   return m ? m[1] : '';
 }
 
@@ -37,7 +37,7 @@ function extractNcFromFileName(fileName) {
 function extractNameFromFileName(fileName) {
   let base = path.basename(fileName, path.extname(fileName));
   base = base.replace(/\.docx$/i, '');
-  const m = base.match(/^NC[_\s-]*\d+[_\s-]+(.+)$/i);
+  const m = base.match(/NC[_\s-]*\d+[_\s-]+(.+)$/i);
   if (!m) return '';
   let rest = m[1].replace(/\.docx$/i, '');
   rest = rest.replace(/docx$/i, '');
