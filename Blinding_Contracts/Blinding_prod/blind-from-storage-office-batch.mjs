@@ -5,6 +5,7 @@ import 'dotenv/config';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { runBlindOfficeFromSupabaseStorage } from './blind-from-storage-office.mjs';
+import { getOfficeBlindingDestination, getOfficeBlindingSources } from './storage-folders.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -13,11 +14,12 @@ if (process.env.SKIP_ALREADY_BLINDED !== 'false') {
 }
 
 export async function runBlindOfficeFromSupabaseStorageUntilDone() {
-  const pairs = process.env.BLINDING_FOLDER_PAIRS_JSON ? '(custom JSON)' : 'To Fill 1/2/Fill 3 NC_1250-NC_1470';
+  const dest = getOfficeBlindingDestination();
+  const sources = getOfficeBlindingSources().join(', ');
   const max = process.env.MAX_BLINDING_FILES || '(unlimited per folder)';
   console.log(
     `\n=== Full office blinding run (non-PDF) ===\n` +
-      `Folders: ${pairs} · up to ${max} file(s) per folder per round · SKIP_ALREADY_BLINDED=${process.env.SKIP_ALREADY_BLINDED}\n`,
+      `Sources: ${sources} → ${dest} · up to ${max} file(s) per folder per round · SKIP_ALREADY_BLINDED=${process.env.SKIP_ALREADY_BLINDED}\n`,
   );
 
   let totalProcessed = 0;

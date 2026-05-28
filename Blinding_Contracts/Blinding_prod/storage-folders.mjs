@@ -10,6 +10,38 @@ export const DEFAULT_BLINDING_FOLDER_PAIRS = [
   { source: 'Fill 3 NC_1250-NC_1470', destination: 'Fill 3 NC_1250-NC_1470 Blinded' },
 ];
 
+/** Destination for blinded office / non-PDF contracts (Word, OpenDocument). */
+export const OFFICE_BLINDING_DESTINATION = 'Blinded Missing';
+
+/**
+ * @returns {string}
+ */
+export function getOfficeBlindingDestination() {
+  const raw = process.env.OFFICE_BLINDING_DESTINATION;
+  if (raw != null && String(raw).trim() !== '') return normalizeFolder(raw);
+  return OFFICE_BLINDING_DESTINATION;
+}
+
+/**
+ * Source folders scanned for office documents (same sources as PDF blinding).
+ * @returns {string[]}
+ */
+export function getOfficeBlindingSources() {
+  return getBlindingFolderPairs().map((p) => p.source);
+}
+
+/**
+ * Map each source folder to its PDF blinding destination (legacy office output locations).
+ * @returns {Map<string, string>}
+ */
+export function getLegacyOfficeOutputDestinationsBySource() {
+  const map = new Map();
+  for (const { source, destination } of getBlindingFolderPairs()) {
+    map.set(source, destination);
+  }
+  return map;
+}
+
 /**
  * @returns {{ source: string, destination: string }[]}
  */
@@ -58,10 +90,28 @@ export function outputPathForSource(sourceObjectPath, sourceFolder, destFolder) 
  * @param {string} destFolder
  */
 export function outputPdfPathForOfficeSource(sourceObjectPath, sourceFolder, destFolder) {
-  const base = outputPathForSource(sourceObjectPath, sourceFolder, destFolder);
-  const ext = path.extname(base);
-  if (!ext) return `${base}.pdf`;
-  return base.slice(0, -ext.length) + '.pdf';
+  const fileName = path.basename(sourceObjectPath);
+  const ext = path.extname(fileName);
+  const pdfName = ext ? fileName.slice(0, -ext.length) + '.pdf' : `${fileName}.pdf`;
+  return `${destFolder}/${pdfName}`;
+}
+
+/**
+ * Legacy + current possible blinded output paths for an office source file.
+ * @param {string} sourceObjectPath
+ * @param {string} sourceFolder
+ */
+export function possibleOfficeBlindedOutputPaths(sourceObjectPath, sourceFolder) {
+  const destFolder = getOfficeBlindingDestination();
+  /** @type {string[]} */
+  const paths = [outputPdfPathForOfficeSource(sourceObjectPath, sourceFolder, destFolder)];
+
+  const legacyDest = getLegacyOfficeOutputDestinationsBySource().get(sourceFolder);
+  if (legacyDest) {
+    paths.push(...possibleBlindedOutputPaths(sourceObjectPath, sourceFolder, legacyDest));
+  }
+
+  return [...new Set(paths)];
 }
 
 /**

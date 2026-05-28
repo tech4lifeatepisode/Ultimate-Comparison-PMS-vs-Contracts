@@ -5,3 +5,4 @@ Blind Contracts/
 *.log
 blind-run*.log
 blind-office*.log
+migrate-office*.log

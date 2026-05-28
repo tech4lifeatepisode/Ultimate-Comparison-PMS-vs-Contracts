@@ -1,7 +1,7 @@
 /**
  * Blind non-PDF contracts (Word / OpenDocument) from Supabase Storage.
  * Converts to PDF, applies redaction, uploads blinded PDF to destination folders.
- * Skips files already present in blinded folders or marked success in DB.
+ * Skips files already present in Blinded Missing (or legacy blinded folders).
  */
 import 'dotenv/config';
 import path from 'path';
@@ -10,9 +10,11 @@ import { createClient } from '@supabase/supabase-js';
 import { blindPdfBuffer } from './blind-core.mjs';
 import { convertOfficeDocumentToPdf, destroyDocumentConverter } from './document-convert.mjs';
 import {
-  getBlindingFolderPairs,
+  getOfficeBlindingSources,
+  getOfficeBlindingDestination,
   outputPdfPathForOfficeSource,
-  possibleBlindedOutputPaths,
+  possibleOfficeBlindedOutputPaths,
+  getLegacyOfficeOutputDestinationsBySource,
 } from './storage-folders.mjs';
 import {
   collectOfficeObjectPaths,
@@ -23,7 +25,6 @@ import {
   getSupabaseKey,
 } from './storage-utils.mjs';
 import {
-  fetchSuccessfullyBlindedPaths,
   markBlindingProcessing,
   markBlindingSuccess,
   markBlindingError,
@@ -52,35 +53,47 @@ async function fetchExistingBlindedPaths(supabase, bucket, destFolder) {
  * @returns {Promise<{ jobs: BlindJob[], allAlreadyBlinded: boolean }>}
  */
 async function collectPendingOfficeJobs(supabase, bucket) {
-  const pairs = getBlindingFolderPairs();
-  const skipDone = isEnvTruthy('SKIP_ALREADY_BLINDED');
-  const doneInDb = skipDone ? await fetchSuccessfullyBlindedPaths(supabase) : new Set();
+  const sources = getOfficeBlindingSources();
+  const destFolder = getOfficeBlindingDestination();
 
   const maxRaw = process.env.MAX_BLINDING_FILES;
   const maxPerFolder =
     maxRaw != null && String(maxRaw).trim() !== '' ? Number(maxRaw) : null;
 
+  const existingInDest = await fetchExistingBlindedPaths(supabase, bucket, destFolder);
+  const legacyDests = getLegacyOfficeOutputDestinationsBySource();
+  /** @type {Map<string, Set<string>>} */
+  const existingInLegacy = new Map();
+  for (const legacyFolder of new Set(legacyDests.values())) {
+    existingInLegacy.set(legacyFolder, await fetchExistingBlindedPaths(supabase, bucket, legacyFolder));
+  }
+
   /** @type {BlindJob[]} */
   const jobs = [];
   let totalListed = 0;
 
-  for (const { source, destination } of pairs) {
-    const existingInDest = await fetchExistingBlindedPaths(supabase, bucket, destination);
+  for (const source of sources) {
     const paths = [...new Set(await collectOfficeObjectPaths(supabase, bucket, source))].sort();
     totalListed += paths.length;
 
-    let pending = paths.filter((sourcePath) => {
-      if (skipDone && doneInDb.has(sourcePath)) return false;
-      const outputs = possibleBlindedOutputPaths(sourcePath, source, destination);
-      return !outputs.some((p) => existingInDest.has(p));
+    const pending = paths.filter((sourcePath) => {
+      const outputs = possibleOfficeBlindedOutputPaths(sourcePath, source);
+      if (outputs.some((p) => existingInDest.has(p))) return false;
+      const legacyFolder = legacyDests.get(source);
+      if (legacyFolder) {
+        const legacySet = existingInLegacy.get(legacyFolder);
+        const legacyOutputs = outputs.filter((p) => p.startsWith(`${legacyFolder}/`));
+        if (legacyOutputs.some((p) => legacySet?.has(p))) return false;
+      }
+      return true;
     });
 
-    if (skipDone) {
+    if (isEnvTruthy('SKIP_ALREADY_BLINDED')) {
       console.log(
-        `[${source}] ${paths.length} office file(s), ${paths.length - pending.length} already blinded, ${pending.length} pending.`,
+        `[${source}] ${paths.length} office file(s), ${paths.length - pending.length} already blinded, ${pending.length} pending → ${destFolder}.`,
       );
     } else {
-      console.log(`[${source}] ${paths.length} office file(s) to process.`);
+      console.log(`[${source}] ${paths.length} office file(s) to process → ${destFolder}.`);
     }
 
     if (maxPerFolder != null && Number.isFinite(maxPerFolder) && maxPerFolder > 0 && pending.length > maxPerFolder) {
@@ -91,14 +104,14 @@ async function collectPendingOfficeJobs(supabase, bucket) {
     for (const sourcePath of pending) {
       jobs.push({
         sourceFolder: source,
-        destFolder: destination,
+        destFolder,
         sourcePath,
-        outputPath: outputPdfPathForOfficeSource(sourcePath, source, destination),
+        outputPath: outputPdfPathForOfficeSource(sourcePath, source, destFolder),
       });
     }
   }
 
-  if (totalListed > 0 && jobs.length === 0 && skipDone) {
+  if (totalListed > 0 && jobs.length === 0 && isEnvTruthy('SKIP_ALREADY_BLINDED')) {
     return { jobs: [], allAlreadyBlinded: true };
   }
 
@@ -156,7 +169,7 @@ export async function runBlindOfficeFromSupabaseStorage() {
   }
 
   const supabase = createClient(url, key);
-  console.log(`Contract blinding (office / non-PDF) — bucket "${bucket}"`);
+  console.log(`Contract blinding (office / non-PDF) — bucket "${bucket}" → ${getOfficeBlindingDestination()}`);
 
   const { jobs, allAlreadyBlinded } = await collectPendingOfficeJobs(supabase, bucket);
   if (allAlreadyBlinded) {
