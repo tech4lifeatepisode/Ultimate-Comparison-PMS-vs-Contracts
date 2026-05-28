@@ -3,6 +3,7 @@
  * Override with BLINDING_FOLDER_PAIRS_JSON env var if needed.
  */
 import path from 'path';
+import { isPdfFileName } from './storage-utils.mjs';
 
 export const DEFAULT_BLINDING_FOLDER_PAIRS = [
   { source: 'To Fill 1', destination: 'Fill 1 Blinded' },
@@ -79,7 +80,10 @@ export function normalizeFolder(folder) {
  */
 export function outputPathForSource(sourceObjectPath, sourceFolder, destFolder) {
   const base = sourceObjectPath.slice(sourceFolder.length).replace(/^\/+/, '');
-  const fileName = base.includes('/') ? base.split('/').pop() : base;
+  let fileName = base.includes('/') ? base.split('/').pop() : base;
+  if (isPdfFileName(fileName) && !fileName.toLowerCase().endsWith('.pdf')) {
+    fileName = fileName.replace(/_pdf$/i, '.pdf');
+  }
   return `${destFolder}/${fileName}`;
 }
 

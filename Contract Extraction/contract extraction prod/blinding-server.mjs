@@ -4,6 +4,7 @@
  */
 import { runBlindFromSupabaseStorage, isEnvTruthy } from '../../Blinding_Contracts/Blinding_prod/blind-from-storage.mjs';
 import { runBlindFromSupabaseStorageUntilDone } from '../../Blinding_Contracts/Blinding_prod/blind-from-storage-batch.mjs';
+import { runAllBlindingFromSupabaseStorageUntilDone } from '../../Blinding_Contracts/Blinding_prod/blind-all-from-storage.mjs';
 
 let blindingRunning = false;
 
@@ -43,7 +44,7 @@ export async function safeRunBlindAll(label) {
   }
   blindingRunning = true;
   try {
-    const r = await runBlindFromSupabaseStorageUntilDone();
+    const r = await runAllBlindingFromSupabaseStorageUntilDone();
     console.log(`[${label}] Full blinding run finished:`, r);
     return r;
   } catch (e) {
@@ -90,8 +91,8 @@ export function scheduleAutoBlindOnBoot() {
 export function blindHealthLines() {
   return (
     'POST/GET /blind — one blinding batch (MAX_BLINDING_FILES per source folder).\n' +
-    'POST/GET /blind-all — blind all pending PDFs in To Fill 1/2/Fill 3 folders.\n' +
-    'AUTO_BLIND_FROM_STORAGE=true: on boot, runs all blinding batches until done.\n' +
+    'POST/GET /blind-all — blind all pending PDFs + office docs (Fill X Blinded + Blinded Missing).\n' +
+    'AUTO_BLIND_FROM_STORAGE=true: on boot, runs PDF and office blinding until done.\n' +
     'Optional headers: X-Blind-Secret or X-Extract-Secret: <BLIND_TRIGGER_SECRET or EXTRACT_TRIGGER_SECRET>\n'
   );
 }

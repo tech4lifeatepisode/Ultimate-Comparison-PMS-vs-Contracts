@@ -8,7 +8,8 @@
     "blind:all": "node blind-from-storage-batch.mjs",
     "blind:office": "node blind-from-storage-office.mjs",
     "blind:office:all": "node blind-from-storage-office-batch.mjs",
-    "migrate:office": "node migrate-office-to-blinded-missing.mjs"
+    "migrate:office": "node migrate-office-to-blinded-missing.mjs",
+    "blind:all:full": "node blind-all-from-storage.mjs"
   },
   "dependencies": {
     "@matbee/libreoffice-converter": "^2.6.0",

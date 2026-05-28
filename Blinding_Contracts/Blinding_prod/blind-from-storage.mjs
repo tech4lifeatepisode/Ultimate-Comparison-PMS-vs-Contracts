@@ -8,13 +8,18 @@ import { blindPdfBuffer } from './blind-core.mjs';
 import { getBlindingFolderPairs, outputPathForSource } from './storage-folders.mjs';
 import {
   collectPdfObjectPaths,
+  collectOfficeObjectPaths,
+  collectAllFilePaths,
   downloadObject,
   uploadPdfObject,
   isEnvTruthy,
   getSupabaseKey,
+  isIgnorableNonContractFile,
 } from './storage-utils.mjs';
 import {
-  fetchSuccessfullyBlindedPaths,
+  getOfficeBlindingDestination,
+} from './storage-folders.mjs';
+import {
   markBlindingProcessing,
   markBlindingSuccess,
   markBlindingError,
@@ -31,12 +36,21 @@ export { isEnvTruthy };
  */
 
 /**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} bucket
+ * @param {string} destFolder
+ */
+async function fetchExistingBlindedPaths(supabase, bucket, destFolder) {
+  const paths = await collectAllFilePaths(supabase, bucket, destFolder);
+  return new Set(paths);
+}
+
+/**
  * @returns {Promise<{ jobs: BlindJob[], allAlreadyBlinded: boolean }>}
  */
 async function collectPendingJobs(supabase, bucket) {
   const pairs = getBlindingFolderPairs();
-  const skipDone = isEnvTruthy('SKIP_ALREADY_BLINDED');
-  const done = skipDone ? await fetchSuccessfullyBlindedPaths(supabase) : new Set();
+  const officeDest = getOfficeBlindingDestination();
 
   const maxRaw = process.env.MAX_BLINDING_FILES;
   const maxPerFolder =
@@ -48,23 +62,30 @@ async function collectPendingJobs(supabase, bucket) {
 
   for (const { source, destination } of pairs) {
     const paths = [...new Set(await collectPdfObjectPaths(supabase, bucket, source))].sort();
+    const existingInDest = await fetchExistingBlindedPaths(supabase, bucket, destination);
     totalListed += paths.length;
-    let pending = paths.filter((p) => !done.has(p));
 
-    if (skipDone) {
-      console.log(
-        `[${source}] ${paths.length} PDF(s), ${paths.length - pending.length} already blinded, ${pending.length} pending.`,
-      );
-    } else {
-      console.log(`[${source}] ${paths.length} PDF(s) to process.`);
-    }
+    const pending = paths.filter((sourcePath) => {
+      const out = outputPathForSource(sourcePath, source, destination);
+      return !existingInDest.has(out);
+    });
 
-    if (maxPerFolder != null && Number.isFinite(maxPerFolder) && maxPerFolder > 0 && pending.length > maxPerFolder) {
+    const allInSource = await collectAllFilePaths(supabase, bucket, source);
+    const officeCount = (await collectOfficeObjectPaths(supabase, bucket, source)).length;
+    const csvCount = allInSource.filter((p) => isIgnorableNonContractFile(path.basename(p))).length;
+
+    console.log(
+      `[${source}] ${paths.length} PDF(s), ${officeCount} office (→ ${officeDest}), ${csvCount} CSV ignored · ` +
+        `${paths.length - pending.length} PDF(s) in ${destination}, ${pending.length} pending.`,
+    );
+
+    let batch = pending;
+    if (maxPerFolder != null && Number.isFinite(maxPerFolder) && maxPerFolder > 0 && batch.length > maxPerFolder) {
       console.log(`  Limiting to ${maxPerFolder} file(s) (MAX_BLINDING_FILES).`);
-      pending = pending.slice(0, maxPerFolder);
+      batch = batch.slice(0, maxPerFolder);
     }
 
-    for (const sourcePath of pending) {
+    for (const sourcePath of batch) {
       jobs.push({
         sourceFolder: source,
         destFolder: destination,
@@ -74,7 +95,7 @@ async function collectPendingJobs(supabase, bucket) {
     }
   }
 
-  if (totalListed > 0 && jobs.length === 0 && skipDone) {
+  if (totalListed > 0 && jobs.length === 0) {
     return { jobs: [], allAlreadyBlinded: true };
   }
 

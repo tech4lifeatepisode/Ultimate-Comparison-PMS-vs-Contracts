@@ -9,7 +9,20 @@ export const OFFICE_EXTENSIONS = new Set(['.doc', '.docx', '.docm', '.rtf', '.od
  * @param {string} name
  */
 export function isPdfFileName(name) {
-  return PDF_EXT.has(path.extname(name).toLowerCase());
+  const base = path.basename(name);
+  const ext = path.extname(base).toLowerCase();
+  if (ext === '.pdf') return true;
+  // Some uploads use "_pdf" suffix instead of ".pdf"
+  if (/_pdf$/i.test(base)) return true;
+  return false;
+}
+
+/**
+ * Non-contract artifacts stored alongside source folders (extraction CSV exports).
+ * @param {string} name
+ */
+export function isIgnorableNonContractFile(name) {
+  return path.extname(name).toLowerCase() === '.csv';
 }
 
 /**
@@ -26,21 +39,14 @@ export function isBlindableNonPdfFileName(name) {
   return isOfficeFileName(name);
 }
 
-/**
- * @param {import('@supabase/supabase-js').SupabaseClient} supabase
- * @param {string} bucket
- * @param {string} prefix
- * @param {Set<string>} extensions
- */
-async function collectObjectPathsByExtension(supabase, bucket, prefix, extensions) {
+async function collectObjectPathsByMatcher(supabase, bucket, prefix, matchesName) {
   const data = await listAllStorageItems(supabase, bucket, prefix);
   const out = [];
 
   for (const item of data || []) {
     const rel = prefix ? `${prefix}/${item.name}` : item.name;
-    const ext = path.extname(item.name).toLowerCase();
 
-    if (extensions.has(ext)) {
+    if (matchesName(item.name)) {
       out.push(rel);
       continue;
     }
@@ -52,7 +58,7 @@ async function collectObjectPathsByExtension(supabase, bucket, prefix, extension
 
     const childPrefix = prefix ? `${prefix}/${item.name}` : item.name;
     try {
-      const nested = await collectObjectPathsByExtension(supabase, bucket, childPrefix, extensions);
+      const nested = await collectObjectPathsByMatcher(supabase, bucket, childPrefix, matchesName);
       out.push(...nested);
     } catch (e) {
       console.warn(`Skipping storage path "${rel}":`, e instanceof Error ? e.message : e);
@@ -60,6 +66,18 @@ async function collectObjectPathsByExtension(supabase, bucket, prefix, extension
   }
 
   return out;
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {string} bucket
+ * @param {string} prefix
+ * @param {Set<string>} extensions
+ */
+async function collectObjectPathsByExtension(supabase, bucket, prefix, extensions) {
+  return collectObjectPathsByMatcher(supabase, bucket, prefix, (name) =>
+    extensions.has(path.extname(name).toLowerCase()),
+  );
 }
 
 /** @param {string} name */
@@ -109,7 +127,7 @@ async function listAllStorageItems(supabase, bucket, prefix) {
  * @param {string} prefix
  */
 export async function collectPdfObjectPaths(supabase, bucket, prefix) {
-  return collectObjectPathsByExtension(supabase, bucket, prefix, PDF_EXT);
+  return collectObjectPathsByMatcher(supabase, bucket, prefix, isPdfFileName);
 }
 
 /**
@@ -118,7 +136,7 @@ export async function collectPdfObjectPaths(supabase, bucket, prefix) {
  * @param {string} prefix
  */
 export async function collectOfficeObjectPaths(supabase, bucket, prefix) {
-  return collectObjectPathsByExtension(supabase, bucket, prefix, OFFICE_EXTENSIONS);
+  return collectObjectPathsByMatcher(supabase, bucket, prefix, isOfficeFileName);
 }
 
 /**
