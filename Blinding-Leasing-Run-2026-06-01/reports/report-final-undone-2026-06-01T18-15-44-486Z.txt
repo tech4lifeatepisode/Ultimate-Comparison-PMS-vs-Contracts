@@ -1,0 +1,297 @@
+Final UNDONE report (2026-06-01T18-15-44-486Z)
+Output: C:/Users/kevin/Desktop/Blinding/Final UNDONE
+Sources: Blinded Contracts archives (3-001 + 3-003 only)
+
+Missing list NCs:              282
+Found in archives:             204 NCs, 207 PDFs
+Blinded OK:                    29
+Skipped:                       175
+Errors:                        0
+Duplicate bytes skipped:       3
+Not found in archives:         78
+
+==== NOT FOUND IN BLINDED CONTRACTS ARCHIVES ====
+NC_0262
+NC_0274
+NC_0470
+NC_0502
+NC_0726
+NC_0762
+NC_0772
+NC_0798
+NC_0847
+NC_0878
+NC_0957
+NC_1049
+NC_1053
+NC_1054
+NC_1057
+NC_1059
+NC_1069
+NC_1087
+NC_1091
+NC_1098
+NC_1100
+NC_1109
+NC_1110
+NC_1130
+NC_1137
+NC_1147
+NC_1149
+NC_1155
+NC_1156
+NC_1157
+NC_1172
+NC_1173
+NC_1179
+NC_1181
+NC_1183
+NC_1184
+NC_1185
+NC_1210
+NC_1212
+NC_1222
+NC_1234
+NC_1266
+NC_1295
+NC_1303
+NC_1318
+NC_1330
+NC_1333
+NC_1334
+NC_1346
+NC_1347
+NC_1348
+NC_1349
+NC_1350
+NC_1354
+NC_1361
+NC_1365
+NC_1376
+NC_1408
+NC_1409
+NC_1413
+NC_1426
+NC_1427
+NC_1437
+NC_1438
+NC_1440
+NC_1441
+NC_1442
+NC_1443
+NC_1444
+NC_1445
+NC_1446
+NC_1455
+NC_1456
+NC_1458
+NC_1459
+NC_1466
+NC_1468
+NC_1472
+
+==== PROCESSED ====
+NC_0729  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0738  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0740  ok  NC_0740.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0742  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0743  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0760  ok  NC_0760.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0767  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0769  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0787  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0805  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0812  ok  NC_0812.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0815  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0875  ok  NC_0875.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0946  ok  NC_0946.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0950  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0951  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0953  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0954  ok  NC_0954.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0956  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0960  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0965  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0966  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0967  ok  NC_0967.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0968  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0974  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0975  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0979  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0981  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0982  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0985  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0986  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0989  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0990  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0991  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0992  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_0995  ok  NC_0995.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1004  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1006  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1007  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1011  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1012  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1013  ok  NC_1013.pdf  2 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1022  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1024  ok  NC_1024.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1026  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1027  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1028  ok  NC_1028.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1030  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1031  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1032  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1033  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1037  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1040  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1042  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1043  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1045  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1047  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1048  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1055  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1056  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1060  ok  NC_1060.pdf  2 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1061  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1062  ok  NC_1062.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1063  ok  NC_1063.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1064  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1065  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1066  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1068  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1070  ok  NC_1070.pdf  2 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1071  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1073  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1074  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1075  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1076  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1077  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1078  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1084  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1086  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1089  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1090  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1094  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1096  ok  NC_1096.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1112  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1120  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1123  ok  NC_1123.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1124  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1126  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1127  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1131  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1132  ok  NC_1132.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1133  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1134  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1135  ok  NC_1135.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1136  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1139  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1141  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1142  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1143  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1144  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1158  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1159  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1161  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1162  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1163  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1165  ok  NC_1165.pdf  2 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1166  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1169  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1170  ok  NC_1170.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1171  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1176  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1177  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1178  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1187  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1190  ok  NC_1190.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1191  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1193  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1197  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1198  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1199  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1200  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1201  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1202  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1203  ok  NC_1203.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1204  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1205  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1206  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1208  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1223  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1225  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1226  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1227  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1229  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1230  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1232  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1233  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1235  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1236  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1237  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1240  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1242  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1244  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1248  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1252  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1253  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1255  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1256  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1259  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1260  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1265  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1268  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1270  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1271  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1273  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1274  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1275  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1277  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1278  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1279  ok  NC_1279.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1284  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1290  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1291  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1292  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1293  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1300  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1301  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1304  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1309  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1311  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1313  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1314  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1315  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1316  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1322  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1323  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1324  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1326  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1328  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1339  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1340  ok  NC_1340.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1345  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1351  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1352  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1357  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1358  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1359  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1360  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1364  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1366  ok  NC_1366.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1367  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1371  ok  NC_1371.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1372  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1377  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1378  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1379  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1380  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1381  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1384  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1400  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1404  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1405  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1416  ok  NC_1416.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1417  ok  NC_1417.pdf  1 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1432  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470
+NC_1460  skipped  -  0 regions  Blinded Contracts NC_0001 to NC_1470

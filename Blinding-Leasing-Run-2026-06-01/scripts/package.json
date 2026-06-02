@@ -1,0 +1,25 @@
+{
+  "name": "contract-blinding-prod",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "reblind:final": "node reblind-final.mjs",
+    "reblind:final2": "node reblind-final2.mjs",
+    "reblind:undone": "node reblind-undone.mjs",
+    "reblind:last-run": "node reblind-last-run.mjs",
+    "list:missing": "node list-missing-final2.mjs",
+    "list:not-found": "node list-not-found-categories.mjs",
+    "debug:airbnb": "node debug-airbnb.mjs"
+  },
+  "dependencies": {
+    "@matbee/libreoffice-converter": "^2.6.0",
+    "@napi-rs/canvas": "^1.0.0",
+    "@supabase/supabase-js": "^2.49.1",
+    "dotenv": "^16.4.7",
+    "mupdf": "^1.27.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
+    "tesseract.js": "^7.0.0"
+  }
+}

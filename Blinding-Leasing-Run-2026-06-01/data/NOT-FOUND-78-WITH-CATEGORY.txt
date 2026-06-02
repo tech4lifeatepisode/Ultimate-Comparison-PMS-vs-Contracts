@@ -1,0 +1,173 @@
+NOT FOUND in Blinded Contracts archives (78 NCs)
+Cross-checked vs Seguimiento Leasing (col E = Category, col G = Label)
+
+Total: 78
+B2C:    30
+B2B2C:  13
+B2B:    35
+Other:  0
+Not in Seguimiento sheet: 0
+
+==== ALL 78 (sorted) ====
+NC_0262  [B2B]  Label=Let
+NC_0274  [B2C]  Label=Let
+NC_0470  [B2B]  Label=Let
+NC_0502  [B2B]  Label=Let
+NC_0726  [B2B]  Label=Let
+NC_0762  [B2B]  Label=Let
+NC_0772  [B2C]  Label=Let
+NC_0798  [B2B]  Label=Let
+NC_0847  [B2B]  Label=Let
+NC_0878  [B2B]  Label=Let
+NC_0957  [B2B]  Label=Let
+NC_1049  [B2C]  Label=Let
+NC_1053  [B2C]  Label=Let
+NC_1054  [B2C]  Label=Let
+NC_1057  [B2B2C]  Label=Let
+NC_1059  [B2C]  Label=Let
+NC_1069  [B2C]  Label=Let
+NC_1087  [B2B]  Label=Let
+NC_1091  [B2B]  Label=Let
+NC_1098  [B2B2C]  Label=Let
+NC_1100  [B2C]  Label=Let
+NC_1109  [B2B]  Label=Let
+NC_1110  [B2B]  Label=Let
+NC_1130  [B2B2C]  Label=Let
+NC_1137  [B2B2C]  Label=Let
+NC_1147  [B2B]  Label=Let
+NC_1149  [B2C]  Label=Let
+NC_1155  [B2C]  Label=Let
+NC_1156  [B2C]  Label=Let
+NC_1157  [B2C]  Label=Let
+NC_1172  [B2B2C]  Label=Let
+NC_1173  [B2B2C]  Label=Let
+NC_1179  [B2B2C]  Label=Let
+NC_1181  [B2C]  Label=Let
+NC_1183  [B2C]  Label=Let
+NC_1184  [B2C]  Label=Let
+NC_1185  [B2C]  Label=Let
+NC_1210  [B2C]  Label=Let
+NC_1212  [B2C]  Label=Let
+NC_1222  [B2C]  Label=Let
+NC_1234  [B2C]  Label=Let
+NC_1266  [B2C]  Label=Let
+NC_1295  [B2B]  Label=Let
+NC_1303  [B2B]  Label=Let
+NC_1318  [B2B]  Label=Let
+NC_1330  [B2B]  Label=Let
+NC_1333  [B2B]  Label=Let
+NC_1334  [B2B]  Label=Let
+NC_1346  [B2B]  Label=Let
+NC_1347  [B2B]  Label=Let
+NC_1348  [B2B]  Label=Let
+NC_1349  [B2B]  Label=Let
+NC_1350  [B2B]  Label=Let
+NC_1354  [B2B]  Label=Let
+NC_1361  [B2C]  Label=Let
+NC_1365  [B2B]  Label=Let
+NC_1376  [B2B]  Label=Let
+NC_1408  [B2C]  Label=Let
+NC_1409  [B2B2C]  Label=Let
+NC_1413  [B2B]  Label=Let
+NC_1426  [B2C]  Label=Let
+NC_1427  [B2B]  Label=Let
+NC_1437  [B2B2C]  Label=Let
+NC_1438  [B2B2C]  Label=Let
+NC_1440  [B2C]  Label=Let
+NC_1441  [B2C]  Label=Let
+NC_1442  [B2B2C]  Label=Let
+NC_1443  [B2B]  Label=Let
+NC_1444  [B2B]  Label=Let
+NC_1445  [B2B]  Label=Let
+NC_1446  [B2B2C]  Label=Let
+NC_1455  [B2B]  Label=Let
+NC_1456  [B2B]  Label=Let
+NC_1458  [B2C]  Label=Let
+NC_1459  [B2C]  Label=Let
+NC_1466  [B2C]  Label=Let
+NC_1468  [B2C]  Label=Let
+NC_1472  [B2B2C]  Label=Let
+
+==== B2C only ====
+NC_0274
+NC_0772
+NC_1049
+NC_1053
+NC_1054
+NC_1059
+NC_1069
+NC_1100
+NC_1149
+NC_1155
+NC_1156
+NC_1157
+NC_1181
+NC_1183
+NC_1184
+NC_1185
+NC_1210
+NC_1212
+NC_1222
+NC_1234
+NC_1266
+NC_1361
+NC_1408
+NC_1426
+NC_1440
+NC_1441
+NC_1458
+NC_1459
+NC_1466
+NC_1468
+
+==== B2B2C only ====
+NC_1057
+NC_1098
+NC_1130
+NC_1137
+NC_1172
+NC_1173
+NC_1179
+NC_1409
+NC_1437
+NC_1438
+NC_1442
+NC_1446
+NC_1472
+
+==== B2B only ====
+NC_0262
+NC_0470
+NC_0502
+NC_0726
+NC_0762
+NC_0798
+NC_0847
+NC_0878
+NC_0957
+NC_1087
+NC_1091
+NC_1109
+NC_1110
+NC_1147
+NC_1295
+NC_1303
+NC_1318
+NC_1330
+NC_1333
+NC_1334
+NC_1346
+NC_1347
+NC_1348
+NC_1349
+NC_1350
+NC_1354
+NC_1365
+NC_1376
+NC_1413
+NC_1427
+NC_1443
+NC_1444
+NC_1445
+NC_1455
+NC_1456
