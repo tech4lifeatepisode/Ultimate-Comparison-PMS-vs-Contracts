@@ -500,6 +500,20 @@ function isDocusignCodeLine(text) {
   );
 }
 
+function isDocusignEnvelopeLine(text) {
+  return /Docusign\s+Envelope\s+ID:/i.test(text);
+}
+
+/** NIF / NIE / DNI printed under a signature block. */
+function isIdentityDocumentLine(text) {
+  const t = text.trim();
+  if (/^(NIF|NIE|DNI|CIF|Pasaporte)\b/i.test(t)) return true;
+  if (/\b(NIF|NIE|DNI)\s*[nºo°.:]*\s*[XYZ]?\d{7,8}[-\s]?[A-Z]\b/i.test(t)) return true;
+  if (/^\s*[XYZ]?\d{7,8}[-\s]?[A-Z]\s*$/i.test(t)) return true;
+  if (/\bcon\s+(NIF|NIE|DNI)\b/i.test(t) && /\d{7,8}[A-Z]/i.test(t)) return true;
+  return false;
+}
+
 /** Company-side identifiers that must always stay visible. */
 function isCompanySideLine(text) {
   return /enrique\s+oliete|chamari|la\s+empresa/i.test(text);
@@ -634,10 +648,10 @@ function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
     if (/^\d+$/.test(t)) continue; // page number
     if (isSignatureHeaderLine(t)) continue; // the labels themselves
     if (isUnderscoreLine(t)) continue; // the signature rule itself
-    if (t.includes('Docusign Envelope')) continue;
 
     for (const cell of splitLineIntoCells(line)) {
       if (!cell.text) continue;
+      if (isDocusignEnvelopeLine(cell.text)) continue; // handled by findDocusignEnvelopeIdBoxes
       const anchor = anchorForCell(anchors, cell);
       if (!anchor || anchor.kind !== 'client') continue;
       if (isCompanySideLine(cell.text)) continue; // never hide the company party
@@ -646,14 +660,19 @@ function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
         .filter((r) => r.y < cell.minY && r.y >= anchor.y - 2 && xOverlap(r, cell))
         .sort((a, b) => b.y - a.y)[0];
       const belowRule = Boolean(ruleAbove);
-      if (!belowRule && !isHonorificNameLine(cell.text) && !isDocusignCodeLine(cell.text)) continue;
+      if (
+        !belowRule &&
+        !isHonorificNameLine(cell.text) &&
+        !isDocusignCodeLine(cell.text) &&
+        !isIdentityDocumentLine(cell.text)
+      ) continue;
 
       // Extend the box up to the signature rule so the Docusign ID stamp (which
       // is baked into the signature image just above the printed name and is not
       // in the text layer) is also covered. The cursive signature sits higher up
       // and stays visible.
-      const top = ruleAbove && ruleAbove.y > cell.minY - 60
-        ? Math.min(cell.minY - BOX_PAD_Y, ruleAbove.y - 16)
+      const top = ruleAbove && ruleAbove.y > cell.minY - 80
+        ? Math.min(cell.minY - BOX_PAD_Y, ruleAbove.y - 48)
         : cell.minY - BOX_PAD_Y;
 
       const x = Math.max(LEFT_MARGIN - BOX_PAD_X, cell.minX - BOX_PAD_X * 2);
@@ -668,6 +687,75 @@ function findSignatureSectionBoxes(pageNum, lines, pageWidth) {
     }
   }
 
+  return boxes;
+}
+
+/**
+ * DocuSign footer watermark ("Docusign Envelope ID: …") — redact the UUID on every page.
+ * @param {number} pageNum
+ * @param {TextLine[]} lines
+ * @param {number} pageWidth
+ */
+function findDocusignEnvelopeIdBoxes(pageNum, lines, pageWidth) {
+  /** @type {RedactionBox[]} */
+  const boxes = [];
+  for (const line of lines) {
+    const t = line.text.trim();
+    const m = t.match(/Docusign\s+Envelope\s+ID:\s*([0-9A-F-]{36})/i);
+    if (!m || m.index === undefined) continue;
+    const idStart = t.indexOf(m[1]);
+    const box = boxFromCharRange(line, idStart, pageNum, pageWidth);
+    if (box) boxes.push(box);
+  }
+  return boxes;
+}
+
+/**
+ * Avalista / client printed names that spill onto the page after the signature
+ * block (common when multiple guarantors sign — page 16 has rules, page 17 names).
+ * @param {number} pageNum
+ * @param {{ lines: TextLine[], pageWidth: number }} pageData
+ * @param {{ lines: TextLine[], pageWidth: number }} prevPageData
+ */
+function findSignatureContinuationBoxes(pageNum, pageData, prevPageData) {
+  const lines = pageData.lines;
+  const pageWidth = pageData.pageWidth;
+  if (collectLabelAnchors(lines).some((a) => a.kind === 'client')) return [];
+
+  const txt = pageText(pageData);
+  if (/^Anexo\s/i.test(txt.trim()) || /Condiciones\s+Particulares/i.test(txt)) return [];
+
+  const prevTxt = pageText(prevPageData);
+  const prevHadSigBlock =
+    /prueba\s+de\s+conformidad/i.test(prevTxt) ||
+    collectLabelAnchors(prevPageData.lines).some((a) => a.kind === 'client');
+  if (!prevHadSigBlock) return [];
+
+  const compactLen = txt.replace(/\s/g, '').length;
+  const hasLeakLine = lines.some((l) => {
+    const t = l.text.trim();
+    return (
+      isHonorificNameLine(t) ||
+      isDocusignCodeLine(t) ||
+      isIdentityDocumentLine(t)
+    );
+  });
+  if (!hasLeakLine || compactLen > 500) return [];
+
+  /** @type {RedactionBox[]} */
+  const boxes = [];
+  for (const line of lines) {
+    const t = line.text.trim();
+    if (!t || /^\d+$/.test(t)) continue;
+    if (isCompanySideLine(t)) continue;
+    if (
+      isHonorificNameLine(t) ||
+      isDocusignCodeLine(t) ||
+      isIdentityDocumentLine(t)
+    ) {
+      boxes.push(makeRedactionBox(pageNum, pageWidth, itemsToBox(line.items)));
+    }
+  }
   return boxes;
 }
 
@@ -778,6 +866,11 @@ function findAllRedactionBoxes(pages) {
       boxes.push(...findPartyIdentificationBoxes(pageData.lines, pageData.pageWidth, pageNum));
     }
     boxes.push(...findSignatureSectionBoxes(pageNum, pageData.lines, pageData.pageWidth));
+    boxes.push(...findDocusignEnvelopeIdBoxes(pageNum, pageData.lines, pageData.pageWidth));
+    const prevPage = pages.get(pageNum - 1);
+    if (prevPage) {
+      boxes.push(...findSignatureContinuationBoxes(pageNum, pageData, prevPage));
+    }
   }
 
   return boxes;
@@ -857,11 +950,18 @@ function findImageSignaturePages(pages, pagesWithSignatureBox) {
     }
   }
 
-  // Long contracts (32+ pages) put the signatures around pages 16-18. If nothing
-  // was found there by text or by the closing phrase, OCR those pages as a last
-  // resort so an image-flattened signature block is still caught.
-  if (!candidates.size && pagesWithSignatureBox.size === 0 && pages.size >= 30) {
-    for (const p of [16, 17, 18]) if (pages.has(p)) candidates.add(p);
+  // Long contracts (32+ pages) put the signatures around pages 16-18. OCR any of
+  // those pages that still lack text-layer signature redactions.
+  if (pages.size >= 30) {
+    for (const p of [16, 17, 18]) {
+      if (pages.has(p) && !pagesWithSignatureBox.has(p)) candidates.add(p);
+    }
+  }
+
+  // Avalista names often continue on the page after the signature block.
+  const p16 = pages.get(16);
+  if (p16 && /El\s*Avalista/i.test(pageText(p16)) && pages.has(17) && !pagesWithSignatureBox.has(17)) {
+    candidates.add(17);
   }
 
   return [...candidates].sort((a, b) => a - b);
@@ -892,8 +992,13 @@ async function computeRedaction(fileBuffer, fileName) {
       const ocrPages = await ocrSpecificPages(fileBuffer, ocrPageNums);
       for (const [pageNum, pd] of ocrPages) {
         boxes.push(...findSignatureSectionBoxes(pageNum, pd.lines, pd.pageWidth));
+        boxes.push(...findDocusignEnvelopeIdBoxes(pageNum, pd.lines, pd.pageWidth));
         if (/de\s+una\s+parte/i.test(pageText(pd))) {
           boxes.push(...findPartyIdentificationBoxes(pd.lines, pd.pageWidth, pageNum));
+        }
+        const prevPage = pages.get(pageNum - 1) || ocrPages.get(pageNum - 1);
+        if (prevPage) {
+          boxes.push(...findSignatureContinuationBoxes(pageNum, pd, prevPage));
         }
       }
     }

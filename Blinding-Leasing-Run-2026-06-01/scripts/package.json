@@ -8,6 +8,11 @@
     "reblind:final2": "node reblind-final2.mjs",
     "reblind:undone": "node reblind-undone.mjs",
     "reblind:last-run": "node reblind-last-run.mjs",
+    "blind:expired": "node blind-expired-from-zip.mjs",
+    "blind:expired:dry": "node blind-expired-from-zip.mjs --dry",
+    "blind:pendientes": "node blind-pendientes.mjs",
+    "blind:pendientes:dry": "node blind-pendientes.mjs --dry",
+    "reblind:pendientes": "node blind-pendientes.mjs --reblind",
     "list:missing": "node list-missing-final2.mjs",
     "list:not-found": "node list-not-found-categories.mjs",
     "debug:airbnb": "node debug-airbnb.mjs"

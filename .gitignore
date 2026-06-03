@@ -35,3 +35,14 @@ Blinding_Contracts/Blinding_Sandbox/Contracts/
 Blinding_Contracts/Blinding_Sandbox/Blind Contracts/
 Blinding_Contracts/Blinding_prod/Contracts/
 Blinding_Contracts/Blinding_prod/Blind Contracts/
+
+# Blinding-Leasing-Run-2026-06-01 — local batch data (never commit PDFs/zips)
+Blinding-Leasing-Run-2026-06-01/Contracts Zip/
+Blinding-Leasing-Run-2026-06-01/Contracts Extracted/
+Blinding-Leasing-Run-2026-06-01/Blinded Expired Contracts/
+Blinding-Leasing-Run-2026-06-01/B2B NCs/
+Blinding-Leasing-Run-2026-06-01/Pendientes Blinding/
+Blinding-Leasing-Run-2026-06-01/scripts/node_modules/
+Blinding-Leasing-Run-2026-06-01/scripts/spa.traineddata
+Blinding-Leasing-Run-2026-06-01/logs/
+Blinding-Leasing-Run-2026-06-01/reports/
